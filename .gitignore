@@ -1,0 +1,60 @@
+# ============================================================================
+# NK-native — .gitignore
+# Proyecto de co-registro y DoD de DEMs (glaciología).
+# Los rásteres (DEMs, DoD) son grandes y NO se versionan.
+# ============================================================================
+
+# --- Entorno Python ---
+.venv/
+venv/
+env/
+*.pyc
+__pycache__/
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# --- macOS / sistema ---
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# --- Configuración local de esta máquina (rutas absolutas, secretos) ---
+config.local.toml
+
+# --- Datos fuente grandes (no versionan: viven fuera del repo) ---
+data/raw/
+*.tif
+*.tiff
+*.img
+
+# --- Salidas / derivados generados por los scripts (regenerables) ---
+dems_alineados/
+dems_nk/
+dems_deramped/
+dems_variants/
+dod/
+dod_figures/
+test_outputs/
+report/figures/
+report/dod_geotiffs/
+report/tables/
+coreg_*.csv
+dod_*.csv
+deramp_*.csv
+nk_coreg_summary.csv
+
+# --- Archivos de memoria / auditoría del proyecto (se versionan) ---
+docs/memoria/*.md
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

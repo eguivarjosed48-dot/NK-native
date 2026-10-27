@@ -1,0 +1,16 @@
+# Git attributes para NK-native.
+# Evita que GitHub/LFS intente rastrear binarios grandes de derivados.
+
+*.tif linguist-generated=true
+*.tiff linguist-generated=true
+*.png linguist-generated=true
+*.jpg linguist-generated=true
+*.geojson linguist-generated=true
+*.gpkg linguist-generated=true
+*.csv linguist-generated=true
+
+# Texto plano: normalizar finales de línea
+*.py text eol=lf
+*.toml text eol=lf
+*.md text eol=lf
+*.csv text eol=lf

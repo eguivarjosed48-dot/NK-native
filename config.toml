@@ -1,0 +1,47 @@
+# Configuración por defecto del proyecto NK-native.
+# Las rutas relativas se resuelven desde la raíz del repositorio.
+# Para rutas propias de tu máquina crea `config.local.toml` (ignorado por git).
+
+[project]
+reference_year = "2025"
+years = ["2017", "2018", "2023"]
+
+[params]
+# Co-registro Nuth & Kääb
+nk_subsample = 0.2
+# Deramp y validación cruzada espacial
+poly_order = 3
+cv_n_blocks = 4
+cv_min_pixels_per_block = 2000
+cv_max_train_pixels = 200000
+random_seed = 42
+# Propagación de error del volumen (fracción de píxeles efectivos)
+n_eff_fraction = 0.05
+# Figuras
+map_downsample = 4
+vmin_pct = 2
+vmax_pct = 98
+n_hyps_bins = 20
+
+[input]
+# Carpeta raíz donde viven los DSM crudos. No se versiona (ver .gitignore).
+dem_dir = "data/raw/dems"
+# Plantilla relativa a dem_dir. {year} se reemplaza por cada año.
+dem_pattern = "{year}/{year}_DSM.tif"
+# DEM que define la cuadrícula maestra (CRS, resolución, bounds).
+reference_dem = "data/raw/dems/2025_B/2025_B_DSM.tif"
+# Polígonos de apoyo (sí se versionan: son pequeños y definen el método).
+stable_terrain = "data/stable_terrain.gpkg"
+glacier_polygon = "data/glaciar_2017.gpkg"
+
+[output]
+aligned_dir = "dems_alineados"
+nk_dir = "dems_nk"
+variants_dir = "dems_variants"
+dod_dir = "dod"
+dod_figures_dir = "dod_figures"
+report_dir = "report"
+test_outputs_dir = "test_outputs"
+coreg_csv = "coreg_variants_summary.csv"
+dod_csv = "dod_summary.csv"
+nk_csv = "nk_coreg_summary.csv"
