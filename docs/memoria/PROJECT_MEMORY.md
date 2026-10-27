@@ -129,6 +129,13 @@ Desde la raíz con el entorno activado (`source .venv/bin/activate`):
 
 Scripts opcionales/diagnóstico: `scripts/02-deramp-autotune.py`, `scripts/test.py`, `scripts/test_glaciar_vs_estable.py`.
 
+Nota sobre scripts legacy: `scripts/02-deramp-autotune.py` es la versión anterior del Paso 2
+(deramp polinómico sin validación cruzada espacial ni variantes NK/deramp3/derampCV). Se conserva
+como referencia histórica y para experimentos que no requieran CV. El pipeline principal usa
+`scripts/02-NK-Variantes.py`. Los scripts `scripts/test.py` y
+`scripts/test_glaciar_vs_estable.py` son utilidades de diagnóstico, no forman parte del
+pipeline principal.
+
 Pruebas unitarias: `pytest tests/`
 
 ---
@@ -180,11 +187,19 @@ Todos estos resultados están en `coreg_variants_summary.csv` y `dod_summary.csv
 
 ---
 
+## 7.5. Informe
+
+- `report/report_final.md` — informe final del análisis (pendiente de redacción).
+- `report/tables/T6_report_main.md` — tablas consolidadas T3–T5 en markdown.
+- `report/figures/F1–F9` — figuras generadas por `scripts/04-report.py`.
+
+---
+
 ## 8. Estado de Git y despliegue a GitHub
 
 - **Rama:** `main`
-- **Último commit:** `f1e6069` — "chore: proyecto base NK-native listo para GitHub"
-- **Working tree:** limpio
+- **Último commit:** `797f88d` — "docs: añadir archivos de memoria para retomar el proyecto con LLM"
+- **Working tree:** cambios pendientes (ver `git status`).
 - **Remoto:** aún no configurado (pendiente crear repo en GitHub)
 
 Cuando exista el repositorio en GitHub (usuario `eguivar`, nombre `NK-native`, **vacío**, sin README/.gitignore/LICENSE):
@@ -201,7 +216,51 @@ git push -u origin main
 
 ---
 
-## 9. Reglas para futuras modificaciones (LLM / colaborador)
+## 9. Decisiones de diseño
+
+### CV espacial con `numpy.linalg.lstsq` (en lugar de `xdem.coreg.Deramp` por fold)
+
+En `scripts/02-NK-Variantes.py`, la función `cv_espacial_nmad_numpy` implementa la validación
+cruzada espacial bloqueada con `numpy.linalg.lstsq` sobre una matriz de diseño polinómica
+construida a mano (`construir_matriz_polinomio`), en lugar de llamar a
+`xdem.coreg.Deramp.apply` dentro de cada fold.
+
+**Motivo (rendimiento/memoria):** aplicar `Deramp` sobre el DEM completo por cada fold
+genera copias temporales grandes y provocó uso de swap en equipos con 8 GB de RAM.
+Trabajar solo sobre los píxeles de la máscara estable elimina esa presión de memoria.
+
+**Equivalencia matemática documentada:**
+- `construir_matriz_polinomio` reproduce la misma base de términos
+  [1, y, x, y², xy, x², ...] que usa `xdem` internamente para el deramp polinómico.
+- La normalización de coordenadas (`x_n`, `y_n`) es solo para estabilidad numérica
+  (coordenadas UTM grandes); no altera el subespacio ajustado ni el resultado.
+- `np.linalg.lstsq` resuelve los mismos mínimos cuadrados ordinarios que `xdem`
+  resuelve internamente.
+- Los tests en `tests/test_cv_equivalence.py` verifican ejecutablemente que los
+  coeficientes (con cambio de signo por dirección de la diferencia) y las
+  predicciones son equivalentes a los de `xdem.coreg.Deramp(poly_order=3)`.
+
+### Propagación de error por variograma (en lugar de fracción arbitraria)
+
+En `scripts/03-DoD.py`, `sigma_volume_m3` se calculaba con
+`n_eff = 0.05 * n_pixels` (5% arbitrario), lo que subestimaba el error por un
+factor de ~1000. Ahora se usa `nkdem.stats.estimar_n_eff`, que:
+
+- Calcula el variograma experimental del residual DoD con desplazamientos (`np.roll`).
+- Ajusta un modelo esférico o exponencial con `scipy.optimize.curve_fit` para
+  estimar el rango de correlación (en píxeles).
+- Devuelve `n_eff = n_validos / rango_px^2` (equivalente a
+  `area_valida / (rango * pixel_size)^2`).
+
+Si el variograma no converge, se mantiene el fallback a `N_EFF_FRACTION` (0.05),
+marcado explícitamente como `usando_fallback=True` en el CSV de salida.
+El CSV ahora incluye `rango_correlacion_px`, `rango_correlacion_m`,
+`n_eff_calculado`, `modelo_variograma`, `usando_fallback`, `sigma_volume_m3`
+y `sigma_volume_pct`.
+
+---
+
+## 10. Reglas para futuras modificaciones (LLM / colaborador)
 
 1. **Nunca hardcodear rutas absolutas.** Usar `nkdem.config.load_config()` y las propiedades `cfg.*`.
 2. **No versionar rásteres ni outputs.** Todo lo que sea `.tif` o CSV de resultados se ignora con `.gitignore`.
@@ -213,14 +272,14 @@ git push -u origin main
 
 ---
 
-## 10. Archivos de memoria relacionados (en este mismo repo)
+## 11. Archivos de memoria relacionados (en este mismo repo)
 
 - `docs/memoria/00-AUDITORIA.md` — diagnóstico del estado inicial del proyecto (hallazgos, métricas, cambios aplicados).
 - `docs/memoria/01-PLAN-GITHUB.md` — checklist para crear el repo en GitHub y hacer el push.
 
 ---
 
-## 11. Cómo retomar con un LLM en una sesión futura
+## 12. Cómo retomar con un LLM en una sesión futura
 
 Al iniciar una nueva conversación sobre este proyecto, proporcionar este archivo (`PROJECT_MEMORY.md`) y, opcionalmente, `00-AUDITORIA.md`. Con eso el LLM tendrá:
 - Estructura completa del repo.

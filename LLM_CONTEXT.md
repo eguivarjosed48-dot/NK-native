@@ -3,15 +3,20 @@
 Este archivo es una copia de contexto rápido para retomar el proyecto con un LLM.  
 Contenido completo en: `docs/memoria/PROJECT_MEMORY.md`.
 
-## Resumen ejecutivo
+## Estado actual
 - **Proyecto:** co-registro Nuth & Kääb + deramp + DoD de DEMs glaciares (Python 3.12).
-- **Estado:** pipeline 00→04 funcional, resultados generados, listo para GitHub.
+- **Pipeline:** 00→04 funcional, resultados generados, listo para GitHub.
+- **Salvedades resueltas:**
+  1. Validación defensiva de CRS de polígonos en `nkdem/raster.py` (`validar_poligono`) y comprobación `glaciar_mask.sum() > 0` en `scripts/03-DoD.py`.
+  2. Docstring extendido de la CV espacial con `numpy.linalg.lstsq` en `scripts/02-NK-Variantes.py` y test de equivalencia ejecutable vs `xdem.coreg.Deramp` (`tests/test_cv_equivalence.py`).
+  3. Propagación de error por variograma en `nkdem/stats.py` (`estimar_n_eff`) usada en `scripts/03-DoD.py` con fallback documentado a `N_EFF_FRACTION`.
 - **Ubicación:** `/Users/eguivar/Documents/dev/NK-native`
-- **Rama git:** `main`, commit `f1e6069`, sin remoto configurado aún.
+- **Rama git:** `main`, commit `797f88d` (memoria para LLM), working tree con cambios pendientes (ver `git status`).
+- **Tests:** 21 tests pasando (`pytest tests/`). `py_compile` OK.
 
 ## Estructura clave
-- `nkdem/` — paquete compartido (config, raster, stats, io).
-- `scripts/` — pipeline 00-check-input → 04-report.
+- `nkdem/` — paquete compartido: `config.py`, `raster.py` (incluye `validar_poligono`), `stats.py` (incluye `estimar_n_eff`), `io.py`.
+- `scripts/` — pipeline `00-check-input` → `04-report`.
 - `config.toml` — parámetros por defecto (versionado).
 - `config.local.toml` — rutas absolutas de esta MAC (IGNORADO por git).
 - `data/*.gpkg` — polígonos de apoyo (versionados, <1 MB).
@@ -44,4 +49,4 @@ git push -u origin main
 ```
 
 ## Archivo completo
-Ver `docs/memoria/PROJECT_MEMORY.md` (parámetros, métricas, reglas, estructura de directorios, stack).
+Ver `docs/memoria/PROJECT_MEMORY.md` (parámetros, métricas, reglas, estructura de directorios, stack, sección "Decisiones de diseño").
