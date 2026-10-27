@@ -54,7 +54,33 @@ def cv_espacial_nmad_numpy(
     max_train,
     seed,
 ):
-    """CV espacial leave-one-block-out con numpy.linalg.lstsq."""
+    """CV espacial leave-one-block-out con numpy.linalg.lstsq.
+
+    Nota de diseño: esta función NO usa ``xdem.coreg.Deramp`` dentro del
+    bucle de folds. El motivo es de rendimiento: llamar a
+    ``Deramp.apply`` sobre el DEM completo por cada fold genera copias
+    temporales grandes y provocó uso de swap en equipos con 8 GB de RAM.
+    En su lugar, se ajusta el polinomio únicamente sobre los píxeles de
+    entrenamiento de cada fold con ``np.linalg.lstsq`` sobre una matriz de
+    diseño polinómica construida a mano (``construir_matriz_polinomio``).
+
+    Esta reimplementación es matemáticamente equivalente a
+    ``xdem.coreg.Deramp(poly_order=N)`` porque:
+
+    * ``construir_matriz_polinomio`` reproduce exactamente la misma base de
+      términos [1, x, y, x², xy, y², ...] que usa xdem internamente para el
+      deramp polinómico.
+    * La normalización de coordenadas (``x_n``, ``y_n``) es únicamente para
+      estabilidad numérica (evita mal condicionamiento cuando las coordenadas
+      son grandes en metros UTM); no altera el subespacio ajustado y, por lo
+      tanto, no cambia el resultado del polinomio ajustado.
+    * El ajuste con ``np.linalg.lstsq`` resuelve los mismos mínimos cuadrados
+      ordinarios que xdem resuelve internamente para el deramp polinómico.
+
+    Por tanto, el NMAD de validación cruzada obtenido aquí es directamente
+    comparable con el que daría xdem, pero sin el coste de memoria de crear
+    un DEM por fold.
+    """
     rows, cols = np.nonzero(stable_mask)
     n = rows.size
     if n == 0:

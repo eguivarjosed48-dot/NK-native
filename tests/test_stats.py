@@ -26,15 +26,21 @@ def test_difference_stats_respects_mask_and_nan():
 
 
 def test_poly_terms_order_two():
-    assert poly_terms(2) == [(0, 0), (0, 1), (1, 0), (0, 2), (1, 1), (2, 0)]
+    # Base tensor-producto: (order + 1)**2 = 9 términos para order=2.
+    assert poly_terms(2) == [
+        (0, 0), (0, 1), (0, 2),
+        (1, 0), (1, 1), (1, 2),
+        (2, 0), (2, 1), (2, 2),
+    ]
 
 
 def test_polynomial_matrix_shape_and_values():
     x = np.array([2.0])
     y = np.array([3.0])
     matrix = polynomial_matrix(x, y, 2)
-    assert matrix.shape == (1, 6)
-    np.testing.assert_allclose(matrix[0], [1, 3, 2, 9, 6, 4])
+    assert matrix.shape == (1, 9)
+    # Términos: [1, y, y², x, xy, xy², x², x²y, x²y²]
+    np.testing.assert_allclose(matrix[0], [1, 3, 9, 2, 6, 18, 4, 12, 36])
 
 
 def test_assign_blocks_marks_grid_cells():

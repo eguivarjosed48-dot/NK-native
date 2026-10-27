@@ -37,7 +37,7 @@ from nkdem.raster import (  # noqa: E402
     read_raster,
     write_geotiff,
 )
-from nkdem.stats import nmad  # noqa: E402
+from nkdem.stats import estimar_n_eff, nmad  # noqa: E402
 
 OUTPUT_DOD_DIR_NAME = "dod"
 OUTPUT_FIG_DIR_NAME = "dod_figures"
@@ -46,6 +46,7 @@ CSV_OUTPUT_NAME = "dod_summary.csv"
 YEARS = ["2017", "2018", "2023"]
 
 # Número efectivo de píxeles independientes para propagación de error.
+# Se mantiene como fallback explícito si el variograma no converge.
 N_EFF_FRACTION = 0.05
 
 
@@ -56,8 +57,13 @@ def calcular_dod(dem_a, dem_b, mask_dod):
     return dh
 
 
-def estadisticas_dod(dh, pixel_area, n_eff_fraction):
-    """Métricas robustas y propagación de error."""
+def estadisticas_dod(dh, pixel_area, n_eff):
+    """Métricas robustas y propagación de error.
+
+    ``n_eff`` es el número efectivo de píxeles independientes, estimado
+    preferentemente por variograma (``estimar_n_eff``) o por fracción
+    arbitraria de fallback (``N_EFF_FRACTION``).
+    """
     vals = dh[np.isfinite(dh)]
     if vals.size == 0:
         return None
@@ -74,8 +80,11 @@ def estadisticas_dod(dh, pixel_area, n_eff_fraction):
     volume = float(np.sum(vals) * pixel_area)  # m³
     volume_mean = mean * area  # m³ (equivalente)
 
-    n_eff = max(1, int(n * n_eff_fraction))
+    # Propagación de error (aleatorio)
+    # σ_V ≈ σ_dH × A / √N_eff
+    n_eff = max(1, int(n_eff))
     sigma_v = std * area / np.sqrt(n_eff)
+    sigma_pct = 100.0 * sigma_v / volume if volume != 0 else float("nan")
 
     return {
         "n_pixels": int(n),
@@ -92,6 +101,7 @@ def estadisticas_dod(dh, pixel_area, n_eff_fraction):
         "volume_km3": volume / 1e9,
         "n_eff_used": int(n_eff),
         "sigma_volume_m3": float(sigma_v),
+        "sigma_volume_pct": float(sigma_pct),
     }
 
 
@@ -123,6 +133,15 @@ def figura_diagnostico(dh, year, variant, ruta_png, vmin_pct=2, vmax_pct=98):
     plt.close(fig)
 
 
+def _n_eff_para_dod(dh: np.ndarray, pixel_size: float) -> dict:
+    """Estima n_eff por variograma con fallback a fracción arbitraria.
+
+    Devuelve un dict con n_eff, rango_correlacion_px, rango_correlacion_m
+    y usando_fallback.
+    """
+    return estimar_n_eff(dh, pixel_size)
+
+
 def main() -> None:
     cfg = load_config()
     output_dod_dir = Path(cfg.root / OUTPUT_DOD_DIR_NAME)
@@ -151,7 +170,14 @@ def main() -> None:
         cfg.reference_dem, cfg.glacier_polygon
     )
     n_glaciar = int(glacier_mask.sum())
+    if n_glaciar == 0:
+        raise ValueError(
+            "El polígono del glaciar no cubre ningún píxel válido del ráster "
+            f"de referencia ({cfg.reference_dem}). Revisa que el polígono "
+            "tenga el CRS correcto y solape con la extensión del DEM."
+        )
     pixel_area = abs(ref_transform.a * ref_transform.e)
+    pixel_size = (pixel_area) ** 0.5  # píxel asumido cuadrado (m)
     print(f"  Píxeles dentro del polígono del glaciar: {n_glaciar:,}")
     print(f"  Área del polígono: {n_glaciar * pixel_area / 1e6:.3f} km²")
 
@@ -171,7 +197,10 @@ def main() -> None:
         dem_arr, _, _, _ = read_raster(ruta)
         mask_dod = glacier_mask & np.isfinite(dem_arr) & np.isfinite(ref_arr)
         dh = calcular_dod(dem_arr, ref_arr, mask_dod)
-        stats = estadisticas_dod(dh, pixel_area, N_EFF_FRACTION)
+
+        # Propagación de error por variograma (con fallback a fracción arbitraria).
+        neff = _n_eff_para_dod(dh, pixel_size)
+        stats = estadisticas_dod(dh, pixel_area, neff["n_eff"])
         if stats is None:
             print("    Sin píxeles válidos. Se omite.")
             continue
@@ -187,8 +216,20 @@ def main() -> None:
         )
         print(
             f"    Volumen = {stats['volume_m3']/1e6:+.3f} × 10⁶ m³  "
-            f"(σ_V = {stats['sigma_volume_m3']/1e6:.3f} × 10⁶ m³)"
+            f"(σ_V = {stats['sigma_volume_m3']/1e6:.3f} × 10⁶ m³, "
+            f"{stats['sigma_volume_pct']:+.2f}% del volumen)"
         )
+        if neff["usando_fallback"]:
+            print(
+                f"    [fallback] n_eff por fracción arbitraria "
+                f"(N_EFF_FRACTION={N_EFF_FRACTION})"
+            )
+        else:
+            print(
+                f"    [variograma] rango = {neff['rango_correlacion_px']:.1f} px "
+                f"({neff['rango_correlacion_m']:.1f} m), modelo = {neff['modelo']}, "
+                f"n_eff = {neff['n_eff']:,}"
+            )
 
         ruta_tif = output_dod_dir / f"{year}_vs_{cfg.reference_year}_B.tif"
         write_geotiff(ruta_tif, dh, ref_transform, ref_crs)
@@ -201,6 +242,11 @@ def main() -> None:
                 "variant": "NK",
                 "year": year,
                 "ref_year": cfg.reference_year,
+                "rango_correlacion_px": neff["rango_correlacion_px"],
+                "rango_correlacion_m": neff["rango_correlacion_m"],
+                "n_eff_calculado": neff["n_eff"],
+                "modelo_variograma": neff["modelo"],
+                "usando_fallback": neff["usando_fallback"],
                 **stats,
                 "geotiff": str(ruta_tif.resolve()),
                 "figure": str(ruta_png.resolve()),
@@ -229,7 +275,9 @@ def main() -> None:
         dem_arr, _, _, _ = read_raster(ruta)
         mask_dod = glacier_mask & np.isfinite(dem_arr) & np.isfinite(ref_arr)
         dh = calcular_dod(dem_arr, ref_arr, mask_dod)
-        stats = estadisticas_dod(dh, pixel_area, N_EFF_FRACTION)
+
+        neff = _n_eff_para_dod(dh, pixel_size)
+        stats = estadisticas_dod(dh, pixel_area, neff["n_eff"])
         if stats is None:
             print("    Sin píxeles válidos. Se omite.")
             continue
@@ -245,8 +293,20 @@ def main() -> None:
         )
         print(
             f"    Volumen = {stats['volume_m3']/1e6:+.3f} × 10⁶ m³  "
-            f"(σ_V = {stats['sigma_volume_m3']/1e6:.3f} × 10⁶ m³)"
+            f"(σ_V = {stats['sigma_volume_m3']/1e6:.3f} × 10⁶ m³, "
+            f"{stats['sigma_volume_pct']:+.2f}% del volumen)"
         )
+        if neff["usando_fallback"]:
+            print(
+                f"    [fallback] n_eff por fracción arbitraria "
+                f"(N_EFF_FRACTION={N_EFF_FRACTION})"
+            )
+        else:
+            print(
+                f"    [variograma] rango = {neff['rango_correlacion_px']:.1f} px "
+                f"({neff['rango_correlacion_m']:.1f} m), modelo = {neff['modelo']}, "
+                f"n_eff = {neff['n_eff']:,}"
+            )
 
         ruta_tif = output_dod_dir / f"{year}_vs_{cfg.reference_year}_A.tif"
         write_geotiff(ruta_tif, dh, ref_transform, ref_crs)
@@ -259,6 +319,11 @@ def main() -> None:
                 "variant": var,
                 "year": year,
                 "ref_year": cfg.reference_year,
+                "rango_correlacion_px": neff["rango_correlacion_px"],
+                "rango_correlacion_m": neff["rango_correlacion_m"],
+                "n_eff_calculado": neff["n_eff"],
+                "modelo_variograma": neff["modelo"],
+                "usando_fallback": neff["usando_fallback"],
                 **stats,
                 "geotiff": str(ruta_tif.resolve()),
                 "figure": str(ruta_png.resolve()),
