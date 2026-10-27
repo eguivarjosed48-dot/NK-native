@@ -49,8 +49,8 @@ dod_*.csv
 deramp_*.csv
 nk_coreg_summary.csv
 
-# --- Archivos de memoria / auditoría del proyecto (se versionan) ---
-docs/memoria/*.md
+# --- Archivos de memoria / auditoría del proyecto (SE VERSIONAN) ---
+# docs/memoria/*.md  -> se mantienen en el repositorio
 
 # --- IDE ---
 .vscode/
