@@ -33,11 +33,15 @@ NK-native/
 │   ├── 02-NK-Variantes.py
 │   ├── 03-DoD.py
 │   ├── 04-report.py
+│   ├── 05-preinforme.py    # dossier PDF de revisión (auxiliar)
 │   ├── test.py
 │   └── test_glaciar_vs_estable.py
-├── tests/                  # pruebas unitarias (config, stats)
+├── tests/                  # pruebas unitarias (21 tests)
 │   ├── test_config.py
-│   └── test_stats.py
+│   ├── test_stats.py
+│   ├── test_cv_equivalence.py
+│   ├── test_n_eff.py
+│   └── test_validacion_poligono.py
 ├── data/                   # polígomos de apoyo (versionados, <1 MB)
 │   ├── glaciar_2017.gpkg
 │   └── stable_terrain.gpkg
@@ -93,10 +97,13 @@ python scripts/01-nuth-kaab.py     # Paso 1: co-registro Nuth & Kääb
 python scripts/02-NK-Variantes.py  # Paso 2: variantes (NK / deramp3 / deramp-CV)
 python scripts/03-DoD.py           # Paso 3: DEM of Difference
 python scripts/04-report.py        # Paso 4: figuras y tablas del informe
+python scripts/05-preinforme.py    # Paso 5 (aux): dossier PDF de revisión
 ```
 
 Los pasos 2 (`02-deramp-autotune.py`) y las pruebas (`test.py`,
-`test_glaciar_vs_estable.py`) son opcionales / de diagnóstico.
+`test_glaciar_vs_estable.py`) son opcionales / de diagnóstico. El Paso 5
+requiere `reportlab` (incluido en `requirements.txt`) y debe lanzarse desde la
+raíz del repo; genera `report/preinforme.pdf`.
 
 Ejecutar pruebas unitarias:
 
@@ -111,6 +118,8 @@ pytest tests/
 - `report/tables/T6_report_main.md` — informe consolidado en Markdown.
 - `report/figures/` — figuras F1–F9 del análisis.
 - `report/dod_geotiffs/` — GeoTIFFs del DoD (copia local, no se sube).
+- `report/preinforme.pdf` — dossier de revisión con tablas, figuras y pendientes
+  (no es el informe final; tampoco se sube).
 
 Todos los archivos de salida son **regenerables** ejecutando los scripts
 desde cero; por eso no se versionan.

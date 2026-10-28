@@ -28,5 +28,8 @@ tzdata==2026.5
 xarray==2026.9.0
 xdem==0.2.3
 
+# Informe / dossier PDF (Paso 5)
+reportlab==5.1.0
+
 # Desarrollo / pruebas
 pytest>=8.0

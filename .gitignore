@@ -44,6 +44,7 @@ test_outputs/
 report/figures/
 report/dod_geotiffs/
 report/tables/
+report/*.pdf
 coreg_*.csv
 dod_*.csv
 deramp_*.csv

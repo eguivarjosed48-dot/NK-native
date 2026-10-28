@@ -9,9 +9,10 @@
 
 **Nombre:** NK-native  
 **Autor:** Jose Mauricio Eguivar Duran (eguivar.jose.d48@gmail.com)  
-**Fecha:** 2026-10-27  
+**Fecha de creación:** 2026-10-27  
+**Última actualización:** 2026-10-28  
 **Ubicación:** `/Users/eguivar/Documents/dev/NK-native`  
-**Estado:** Pipeline completo funcional, resultados generados, listo para subir a GitHub.
+**Estado:** Pipeline 00→04 completo y funcional, más dossier de revisión `05-preinforme`. Resultados generados y documentación de memoria cerrada. Pendientes: redactar el informe final (`report/report_final.md`) y publicar en GitHub.
 
 **Qué hace:** Co-registro y diferencia de elevación (DoD) de modelos digitales de elevación (DEM) de un glaciar.  
 **Método principal:** Nuth & Kääb (NK) con auto-ajuste (deramp, polinomio grado 3) y validación cruzada espacial bloqueada (CV vectorizada con numpy).  
@@ -43,11 +44,16 @@ NK-native/
 │   ├── 02-NK-Variantes.py   # Paso 2 (principal): NK | deramp3 | deramp-CV -> dems_variants/ + coreg_variants_summary.csv
 │   ├── 03-DoD.py            # Paso 3: DEM of Difference -> dod/ + dod_summary.csv + dod_figures/
 │   ├── 04-report.py         # Paso 4: figuras F1-F9 + tablas T3-T6 -> report/
+│   ├── 05-preinforme.py     # Paso 5 (auxiliar): dossier PDF de revisión -> report/preinforme.pdf
 │   ├── test.py              # Crea data/glaciar_2017.gpkg desde shapefile fuente local
 │   └── test_glaciar_vs_estable.py # Diagnóstico glaciar vs zona estable -> test_outputs/
-├── tests/                   # Pruebas unitarias (pytest)
-│   ├── test_config.py
-│   └── test_stats.py
+├── conftest.py              # pytest: añade la raíz del repo a sys.path
+├── tests/                   # Pruebas unitarias (pytest) — 21 tests
+│   ├── test_config.py               # load_config(): rutas y parámetros
+│   ├── test_stats.py                # nmad(), diferencia_stats(), polinomios
+│   ├── test_cv_equivalence.py       # equivalencia CV numpy vs xdem.coreg.Deramp
+│   ├── test_n_eff.py                # estimar_n_eff() y ajuste de variograma
+│   └── test_validacion_poligono.py  # validar_poligono(): CRS de polígonos
 ├── data/                    # Polígonos de apoyo (pequeños, VERSIONADOS)
 │   ├── glaciar_2017.gpkg
 │   └── stable_terrain.gpkg
@@ -62,7 +68,7 @@ NK-native/
     ├── dod/
     ├── dod_figures/
     ├── test_outputs/
-    └── report/  (figures/, tables/, dod_geotiffs/)
+    └── report/  (figures/, tables/, dod_geotiffs/, preinforme.pdf)
 ```
 
 **Regla de oro:** los rásteres (.tif) y los CSVs de resultados no se versionan. Tamaño estimado del repo versionable: < 5 MB.
@@ -76,7 +82,8 @@ NK-native/
 - **Librerías clave y versiones:**
   - `numpy==2.5.4`, `rasterio==1.5.2`, `geopandas==1.2.0`, `xdem==0.2.3`
   - `geoutils==0.2.5`, `rioxarray==0.23.0`, `scipy==1.18.1`, `matplotlib==3.11.2`
-  - `pandas==2.3.3`, `shapely==2.2.0`, `pyproj==3.8.0`
+  - `pandas==2.3.3`, `shapely==2.2.0`, `pyproj==3.8.0`, `pillow==13.0.0`
+  - `reportlab==5.1.0` — solo para el Paso 5 (dossier PDF de revisión)
 - **Pruebas:** `pytest>=8.0`
 
 ---
@@ -126,8 +133,13 @@ Desde la raíz con el entorno activado (`source .venv/bin/activate`):
 | 2 | `scripts/02-NK-Variantes.py` | `dems_nk/` | `dems_variants/<year>_{NK,deramp3,derampCV}.tif` + `coreg_variants_summary.csv` |
 | 3 | `scripts/03-DoD.py` | `dems_variants/`, `data/glaciar_2017.gpkg` | `dod/<year>_vs_2025_{A,B}.tif` + `dod_summary.csv` |
 | 4 | `scripts/04-report.py` | salidas anteriores | `report/figures/F1-F9.png`, `report/tables/T3-T6.md/csv` |
+| 5 (aux) | `scripts/05-preinforme.py` | `report/tables/T3-T5.csv`, `report/figures/F1-F9.png` | `report/preinforme.pdf` (dossier de revisión) |
 
 Scripts opcionales/diagnóstico: `scripts/02-deramp-autotune.py`, `scripts/test.py`, `scripts/test_glaciar_vs_estable.py`.
+
+El Paso 5 es **auxiliar**: no produce resultados científicos nuevos, solo empaqueta lo ya
+generado por 00→04 en un PDF revisable. Requiere `reportlab` y debe ejecutarse desde la raíz
+del repo (usa rutas relativas `report/`, `report/tables/`, `report/figures/`; no usa `load_config`).
 
 Nota sobre scripts legacy: `scripts/02-deramp-autotune.py` es la versión anterior del Paso 2
 (deramp polinómico sin validación cruzada espacial ni variantes NK/deramp3/derampCV). Se conserva
@@ -187,19 +199,30 @@ Todos estos resultados están en `coreg_variants_summary.csv` y `dod_summary.csv
 
 ---
 
-## 7.5. Informe
+## 7.5. Informe y dossier de revisión
 
-- `report/report_final.md` — informe final del análisis (pendiente de redacción).
+- `report/preinforme.pdf` — **dossier de revisión** generado por `scripts/05-preinforme.py`
+  (portada, propósito, tablas T3–T5, las 9 figuras con pies y lista de pendientes).
+  **No** es el informe científico final.
+- `report/report_final.md` — informe final del análisis (**pendiente de redacción**).
 - `report/tables/T6_report_main.md` — tablas consolidadas T3–T5 en markdown.
 - `report/figures/F1–F9` — figuras generadas por `scripts/04-report.py`.
+
+Tanto `report/preinforme.pdf` como las figuras y tablas son **regenerables** y están ignorados
+por git (`report/figures/`, `report/tables/`, `report/dod_geotiffs/`, `report/*.pdf`).
 
 ---
 
 ## 8. Estado de Git y despliegue a GitHub
 
 - **Rama:** `main`
-- **Último commit:** `797f88d` — "docs: añadir archivos de memoria para retomar el proyecto con LLM"
-- **Working tree:** cambios pendientes (ver `git status`).
+- **Último commit:** `75aadaf` — "docs: sincronizar memoria, renumerar secciones, sección de informe y versiones"
+- **Historial relevante:**
+  - `f17ceff` — "fix: validación defensiva CRS, equivalencia CV con numpy y variograma N_eff"
+  - `797f88d` — "docs: añadir archivos de memoria para retomar el proyecto con LLM"
+  - `f1e6069` — "chore: proyecto base NK-native listo para GitHub"
+- **Working tree:** limpio una vez cerrada esta documentación; solo quedan directorios de salida ignorados.
+- **Tests:** `pytest tests/` → **21 tests pasando** (5 archivos).
 - **Remoto:** aún no configurado (pendiente crear repo en GitHub)
 
 Cuando exista el repositorio en GitHub (usuario `eguivar`, nombre `NK-native`, **vacío**, sin README/.gitignore/LICENSE):
@@ -211,7 +234,7 @@ git branch -M main
 git push -u origin main
 ```
 
-**Qué NO debe subirse jamás:** `.venv/`, `dems_*/`, `dod/`, `report/`, `test_outputs/`, `data/raw/`, `config.local.toml`, `*.csv` de resultados, `.DS_Store`.  
+**Qué NO debe subirse jamás:** `.venv/`, `dems_*/`, `dod/`, `report/`, `test_outputs/`, `data/raw/`, `config.local.toml`, `*.csv` de resultados, `report/*.pdf`, `.DS_Store`.  
 **Qué SÍ se sube:** código Python, `config.toml`, `requirements.txt`, `README.md`, `LICENSE`, `.gitignore`, `.gitattributes`, `tests/`, `docs/memoria/`, `data/*.gpkg`.
 
 ---
@@ -258,17 +281,38 @@ El CSV ahora incluye `rango_correlacion_px`, `rango_correlacion_m`,
 `n_eff_calculado`, `modelo_variograma`, `usando_fallback`, `sigma_volume_m3`
 y `sigma_volume_pct`.
 
+### Dossier PDF de pre-informe (en lugar de redactar directamente el informe final)
+
+`scripts/05-preinforme.py` genera `report/preinforme.pdf` con `reportlab`: reúne en un solo
+documento la portada, el propósito, las tablas T3–T5 (leídas de `report/tables/*.csv`), las 9
+figuras F1–F9 con sus pies y la lista explícita de pendientes para el informe final.
+
+**Motivo:** permitir una revisión visual y numérica rápida de todos los insumos antes de
+comprometer la redacción del informe científico, sin duplicar cifras a mano en un markdown.
+
+**Alcance:** el PDF es un *dossier de revisión*, no un resultado del pipeline. Por eso:
+- no usa `load_config()` (trabaja con rutas relativas a `report/`, por lo que debe lanzarse
+  desde la raíz del repo);
+- no se versiona (§8);
+- cualquier cifra que aparezca en él proviene de los CSV generados por los pasos 02–03, de modo
+  que al regenerar el pipeline el dossier se reconstruye sin editar cifras a mano.
+
 ---
 
 ## 10. Reglas para futuras modificaciones (LLM / colaborador)
 
 1. **Nunca hardcodear rutas absolutas.** Usar `nkdem.config.load_config()` y las propiedades `cfg.*`.
+   Única excepción documentada: `scripts/05-preinforme.py`, que trabaja con rutas relativas a
+   `report/` (ver §5 y §9).
 2. **No versionar rásteres ni outputs.** Todo lo que sea `.tif` o CSV de resultados se ignora con `.gitignore`.
 3. **Mantener outputs regenerables.** Cualquier cambio de metodología debe poder reproducirse ejecutando `00` → `04` desde cero.
 4. **Antes de cambios, ejecutar:** `pytest tests/` y verificar que pase.
-5. **Si se agrega un script nuevo:** ponerlo en `scripts/` y documentarlo en este archivo y en `README.md`.
+5. **Si se agrega un script nuevo:** ponerlo en `scripts/` y documentarlo en este archivo y en `README.md` (incluida su entrada en la tabla del §5 y sus dependencias en `requirements.txt`).
 6. **Si se cambia un parámetro metodológico:** actualizar `config.toml` sección `[params]` y este archivo.
-7. **Las pruebas unitarias viven en `tests/`** y prueban `nkdem.config` y `nkdem.stats` (sin dependencias geoespaciales pesadas).
+7. **Las pruebas unitarias viven en `tests/`** (5 archivos, 21 tests). Cubren `nkdem.config`,
+   `nkdem.stats` (`nmad`, polinomios, `estimar_n_eff`), la equivalencia de la CV con
+   `xdem.coreg.Deramp` y la validación de CRS de polígonos; los tests geoespaciales usan
+   `geopandas`/`rasterio`, que ya están en `requirements.txt`.
 
 ---
 
