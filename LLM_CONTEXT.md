@@ -5,26 +5,26 @@ Contenido completo en: `docs/memoria/PROJECT_MEMORY.md`.
 
 ## Estado actual
 - **Proyecto:** co-registro Nuth & Kääb + deramp + DoD de DEMs glaciares (Python 3.12).
-- **Pipeline:** `00`→`04` funcional, más `05-preinforme` (dossier PDF de revisión). Resultados generados y documentación cerrada; listo para GitHub.
+- **Pipeline:** `00`→`05` completo y verificado de extremo a extremo; resultados regenerados el 2026-10-28 e **informe final redactado** (`report/report_final.md`, formato de artículo científico).
 - **Salvedades resueltas:**
-  1. Validación defensiva de CRS de polígonos en `nkdem/raster.py` (`validar_poligono`) y comprobación `glaciar_mask.sum() > 0` en `scripts/03-DoD.py`.
-  2. Docstring extendido de la CV espacial con `numpy.linalg.lstsq` en `scripts/02-NK-Variantes.py` y test de equivalencia ejecutable vs `xdem.coreg.Deramp` (`tests/test_cv_equivalence.py`).
-  3. Propagación de error por variograma en `nkdem/stats.py` (`estimar_n_eff`), usada en `scripts/03-DoD.py` con fallback documentado a `n_eff_fraction`.
-- **Pendientes:**
-  1. Redactar el informe final `report/report_final.md` (insumos ya reunidos en `report/preinforme.pdf`).
-  2. Crear el repo en GitHub y hacer el push (ver más abajo).
+  1. Validación defensiva de CRS de polígonos en `nkdem/raster.py` (`validar_poligono`) y comprobación de máscara vacía en `scripts/03-DoD.py`.
+  2. CV espacial vectorizada con `numpy.linalg.lstsq` en `scripts/02-NK-Variantes.py`, con test de equivalencia ejecutable vs `xdem.coreg.Deramp` (`tests/test_cv_equivalence.py`).
+  3. Propagación de error por variograma (`nkdem/stats.py::estimar_n_eff`), ahora aplicada al **residual de terreno estable** y no al DoD del glaciar.
+  4. **Bug corregido (2026-10-28):** el Paso 2 no era ejecutable (desempaquetado erróneo de `load_dem_with_mask`) y `deramp3.fit(dem, dem)` ajustaba el polinomio contra sí mismo (corrección nula). Cubierto por `tests/test_deramp_semantics.py`. El deramp se ajusta siempre como `fit(referencia, dem)`.
+- **Pendientes:** publicar en GitHub y completar los metadatos del Apéndice A del informe (afiliación, topónimo del glaciar, fechas/sensor de los vuelos, licencia).
 - **Ubicación:** `/Users/eguivar/Documents/dev/NK-native`
-- **Rama git:** `main`, último commit `75aadaf`; árbol limpio (solo quedan directorios de salida ignorados). Remoto sin configurar.
-- **Tests:** **21 tests pasando** en 5 archivos (`pytest tests/`). `py_compile` OK.
+- **Rama git:** `main`; árbol limpio salvo directorios de salida ignorados. Remoto sin configurar.
+- **Tests:** **28 tests pasando** en 7 archivos (`pytest tests/`). `py_compile` OK.
 
 ## Estructura clave
-- `nkdem/` — paquete compartido: `config.py`, `raster.py` (incluye `validar_poligono`), `stats.py` (incluye `nmad` y `estimar_n_eff`), `io.py`.
+- `nkdem/` — paquete compartido: `config.py`, `raster.py` (`validar_poligono`), `stats.py` (`nmad`, `estimar_n_eff`), `deramp.py` (deramp polinómico por bloques), `io.py`.
 - `scripts/` — pipeline `00-check-input` → `04-report`, más `05-preinforme` (auxiliar, requiere `reportlab`).
-- `tests/` — `test_config.py`, `test_stats.py`, `test_cv_equivalence.py`, `test_n_eff.py`, `test_validacion_poligono.py`.
+- `tests/` — `test_config.py`, `test_stats.py`, `test_cv_equivalence.py`, `test_n_eff.py`, `test_validacion_poligono.py`, `test_deramp.py`, `test_deramp_semantics.py`.
+- `report/report_final.md` — informe final (único archivo versionado de `report/`).
 - `config.toml` — parámetros por defecto (versionado).
 - `config.local.toml` — rutas absolutas de esta MAC (IGNORADO por git).
 - `data/*.gpkg` — polígonos de apoyo (versionados, <1 MB).
-- Rásteres `.tif`, CSVs de resultados y `report/` (figuras, tablas, `preinforme.pdf`): **NO se versionan**.
+- Rásteres `.tif`, CSVs de resultados y el resto de `report/` (figuras, tablas, `preinforme.pdf`): **NO se versionan**.
 
 ## Cómo ejecutar
 ```bash
@@ -39,13 +39,16 @@ pytest tests/
 ```
 
 ## Informe
-- `report/preinforme.pdf` — dossier de revisión generado por `05-preinforme.py` (tablas T3–T5, figuras F1–F9, pendientes). **No** es el informe final y no se versiona.
-- `report/report_final.md` — **pendiente de redacción**.
+- `report/report_final.md` — informe final en formato de artículo (resumen, métodos, resultados, discusión, conclusiones, referencias, apéndice de metadatos pendientes).
+- `report/preinforme.pdf` — dossier de revisión generado por `05-preinforme.py`. No es el informe final y no se versiona.
 - `report/tables/T6_report_main.md` — tablas T3–T5 consolidadas en markdown.
 
-## Resultados de referencia
-- Volumen glaciar vs 2025 — Opción B (todo NK): 2017 **+1.751×10⁶ m³**, 2018 **+1.572×10⁶ m³**, 2023 **+0.738×10⁶ m³**. Opción A (mixta, 2018 con deramp3): 2018 **+1.375×10⁶ m³** (−12,5 %).
-- NMAD final en zona estable: 2017 **0.471 m** (NK), 2018 **0.321 m** (deramp3, CV lo acepta), 2023 **0.143 m** (NK).
+## Resultados de referencia (regenerados el 2026-10-28)
+- Volumen glaciar vs 2025 — Opción B (todo NK): 2017 **+1,751×10⁶ m³**, 2018 **+1,572×10⁶ m³**, 2023 **+0,738×10⁶ m³** (pérdida de masa).
+- Tasas: **1,22 / 1,28 / 2,00 m a⁻¹** (Δt = 8 / 7 / 2 a); balance específico 1,04 / 1,09 / 1,70 m w.e. a⁻¹ (ρ = 850 kg m⁻³).
+- NMAD final en terreno estable: **0,471 / 0,372 / 0,143 m**.
+- **La CV rechaza el deramp en los tres años** (mejora *in-sample* pero no fuera de muestra) → Opción A = Opción B. Sensibilidad con deramp3 forzado (Opción C): **−5,2 % / −12,5 % / −5,3 %**.
+- σ_V (ruido del co-registro): 1.651 / 618 / 437 m³ (0,04–0,09 %); incertidumbre total estimada 10–15 %.
 - Convención de signo: `dH = DEM_año − DEM_2025`; volumen positivo = pérdida de masa.
 
 ## Regla de oro
@@ -56,6 +59,8 @@ cfg = load_config()
 cfg.reference_dem, cfg.dem("2017"), cfg.nk_dem("2018"), cfg.dod_dir, ...
 ```
 (Excepción documentada: `scripts/05-preinforme.py` usa rutas relativas a `report/` y debe lanzarse desde la raíz del repo.)
+
+Además: el deramp se ajusta **siempre** contra la referencia (`fit(ref, dem)`); `fit(dem, dem)` produce una corrección nula (ver `tests/test_deramp_semantics.py`).
 
 ## Push a GitHub (pendiente)
 ```bash

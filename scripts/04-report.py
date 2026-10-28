@@ -24,6 +24,7 @@ import warnings
 from pathlib import Path
 
 import numpy as np
+import rasterio
 import matplotlib
 
 matplotlib.use("Agg")
@@ -36,7 +37,7 @@ warnings.filterwarnings("ignore", message=".*partition.*MaskedArray.*")
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from nkdem.config import load_config, require_files  # noqa: E402
-from nkdem.io import leer_csv, write_csv  # noqa: E402
+from nkdem.io import read_csv, write_csv  # noqa: E402
 from nkdem.raster import (  # noqa: E402
     downsample_mean,
     load_dem_with_mask,
@@ -48,8 +49,6 @@ REFERENCE_YEAR = "2025"
 YEARS = ["2017", "2018", "2023"]
 
 # Variante elegida por año (según decisión de CV del Paso 2)
-VARIANT_CHOICE = {"2017": "NK", "2018": "deramp3", "2023": "NK"}
-
 # Resolución para mapas (evita PNGs gigantes). 1 = resolución nativa.
 MAP_DOWNSAMPLE = 4
 
@@ -289,9 +288,10 @@ def fig6_7_dod(ref_transform, ref_crs, cfg, figures_dir):
     print("  [F6/F7] Mapas e histogramas del DoD...")
     dod_files = {}
     for year in YEARS:
-        ruta = cfg.dod_dir / f"{year}_vs_{REFERENCE_YEAR}_A.tif"
+        # Opción B (todo NK) es la variante principal del análisis.
+        ruta = cfg.dod_dir / f"{year}_vs_{REFERENCE_YEAR}_B.tif"
         if not ruta.exists():
-            ruta = cfg.dod_dir / f"{year}_vs_{REFERENCE_YEAR}_B.tif"
+            ruta = cfg.dod_dir / f"{year}_vs_{REFERENCE_YEAR}_A.tif"
         if ruta.exists():
             dod_files[year] = ruta
 
@@ -399,38 +399,54 @@ def fig8_hypsometry(ref_arr, glacier_mask, cfg, figures_dir):
 
 
 def fig9_sensitivity_B_vs_A(dod_csv_rows, figures_dir):
-    print("  [F9] Sensibilidad Opción B vs A...")
+    """F9: volúmenes por opción (B = NK; A = según CV; C = deramp3 forzado)."""
+    print("  [F9] Sensibilidad por variante (B / A / C)...")
     if not dod_csv_rows:
         return
 
-    years_b, vol_b, vol_a = [], [], []
-    for year in YEARS:
-        b = next((r for r in dod_csv_rows if r["year"] == year and r["option"] == "B"), None)
-        a = next((r for r in dod_csv_rows if r["year"] == year and r["option"] == "A"), None)
-        if b and a:
-            years_b.append(year)
-            vol_b.append(float(b["volume_m3"]) / 1e6)
-            vol_a.append(float(a["volume_m3"]) / 1e6)
+    def _volumenes(year, opcion):
+        fila = next(
+            (r for r in dod_csv_rows if r["year"] == year and r["option"] == opcion),
+            None,
+        )
+        return None if fila is None else float(fila["volume_m3"]) / 1e6
 
-    if not years_b:
+    years, vol_b, vol_a, vol_c = [], [], [], []
+    for year in YEARS:
+        b = _volumenes(year, "B")
+        if b is None:
+            continue
+        years.append(year)
+        vol_b.append(b)
+        vol_a.append(_volumenes(year, "A") if _volumenes(year, "A") is not None else b)
+        vol_c.append(_volumenes(year, "C") if _volumenes(year, "C") is not None else b)
+
+    if not years:
         return
 
-    x = np.arange(len(years_b))
-    w = 0.35
+    x = np.arange(len(years))
+    w = 0.26
 
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.bar(x - w / 2, vol_b, w, label="Opción B (todo NK)", color="C0")
-    ax.bar(x + w / 2, vol_a, w, label="Opción A (mixta)", color="C1")
-    for i, (b, a) in enumerate(zip(vol_b, vol_a)):
-        if b != 0:
-            pct = 100 * (a - b) / b
-            ax.annotate(f"{pct:+.1f}%", (x[i], max(b, a)),
-                        textcoords="offset points", xytext=(0, 5),
-                        ha="center", fontsize=9)
+    fig, ax = plt.subplots(figsize=(8.5, 5))
+    ax.bar(x - w, vol_b, w, label="B: todo NK", color="C0")
+    ax.bar(x, vol_a, w, label="A: según CV", color="C1")
+    ax.bar(x + w, vol_c, w, label="C: deramp3 forzado", color="C3")
+    for i in range(len(years)):
+        if vol_b[i]:
+            pct_c = 100 * (vol_c[i] - vol_b[i]) / vol_b[i]
+            if abs(pct_c) > 0.05:
+                ax.annotate(f"{pct_c:+.1f}%", (x[i] + w, vol_c[i]),
+                            textcoords="offset points", xytext=(0, 5),
+                            ha="center", fontsize=9)
+            pct_a = 100 * (vol_a[i] - vol_b[i]) / vol_b[i]
+            if abs(pct_a) > 0.05:
+                ax.annotate(f"{pct_a:+.1f}%", (x[i], vol_a[i]),
+                            textcoords="offset points", xytext=(0, 5),
+                            ha="center", fontsize=9)
     ax.set_xticks(x)
-    ax.set_xticklabels(years_b)
+    ax.set_xticklabels(years)
     ax.set_ylabel("Volumen (10⁶ m³)")
-    ax.set_title("Sensibilidad del volumen: Opción B vs Opción A")
+    ax.set_title("Sensibilidad del volumen a la variante de co-registro")
     ax.legend()
     ax.grid(alpha=0.3, axis="y")
     plt.tight_layout()
@@ -444,17 +460,17 @@ def generar_tablas(cfg):
 
     # T4: DoD summary
     if cfg.dod_csv.exists():
-        rows = leer_csv(cfg.dod_csv)
+        rows = read_csv(cfg.dod_csv)
         write_csv(rows, cfg.tables_dir / "T4_dod_summary.csv")
 
     # T3: variantes de co-registro
     if cfg.coreg_csv.exists():
-        rows = leer_csv(cfg.coreg_csv)
+        rows = read_csv(cfg.coreg_csv)
         write_csv(rows, cfg.tables_dir / "T3_coreg_step2_variants.csv")
 
     # T5: glaciar vs estable
     if cfg.test_outputs_dir.joinpath("test_glaciar_vs_estable.csv").exists():
-        rows = leer_csv(cfg.test_outputs_dir / "test_glaciar_vs_estable.csv")
+        rows = read_csv(cfg.test_outputs_dir / "test_glaciar_vs_estable.csv")
         write_csv(rows, cfg.tables_dir / "T5_glacier_vs_stable.csv")
 
     # T6: markdown consolidado
@@ -466,7 +482,7 @@ def generar_tablas(cfg):
         f.write("## Tabla 3. Variantes de co-registro (Paso 2)\n\n")
         f.write("| Año | N_valid | NMAD_NK (m) | NMAD_deramp3 (m) | NMAD_CV (m) | NMAD_NKcv (m) | CV acepta | NMAD final (m) |\n")
         f.write("|---|---|---|---|---|---|---|---|\n")
-        for r in leer_csv(cfg.tables_dir / "T3_coreg_step2_variants.csv"):
+        for r in read_csv(cfg.tables_dir / "T3_coreg_step2_variants.csv"):
             f.write(f"| {r['year']} | {int(r['n_valid']):,} | "
                     f"{float(r['nmad_nk']):.3f} | {float(r['nmad_deramp3']):.3f} | "
                     f"{float(r['nmad_cv']):.3f} | {float(r['nmad_nk_cv']):.3f} | "
@@ -476,7 +492,7 @@ def generar_tablas(cfg):
         f.write("## Tabla 4. Resumen del DoD (Paso 3)\n\n")
         f.write("| Año | Opción | Variante | N_px | dH medio (m) | dH mediana (m) | NMAD (m) | Volumen (10⁶ m³) |\n")
         f.write("|---|---|---|---|---|---|---|---|\n")
-        for r in leer_csv(cfg.tables_dir / "T4_dod_summary.csv"):
+        for r in read_csv(cfg.tables_dir / "T4_dod_summary.csv"):
             f.write(f"| {r['year']} | {r['option']} | {r['variant']} | "
                     f"{int(r['n_pixels']):,} | {float(r['dh_mean_m']):+.3f} | "
                     f"{float(r['dh_median_m']):+.3f} | {float(r['dh_nmad_m']):.3f} | "
@@ -484,7 +500,7 @@ def generar_tablas(cfg):
         f.write("\n")
 
         f.write("## Tabla 5. Glaciar vs zona estable\n\n")
-        for r in leer_csv(cfg.tables_dir / "T5_glacier_vs_stable.csv"):
+        for r in read_csv(cfg.tables_dir / "T5_glacier_vs_stable.csv"):
             for k, v in r.items():
                 f.write(f"- **{k}**: {v}\n")
         f.write("\n")
@@ -525,7 +541,7 @@ def main() -> None:
     fig5_deramp_vs_slope_aspect(ref_arr, ref_mask, glacier_mask, cfg, cfg.figures_dir)
     fig6_7_dod(ref_transform, ref_crs, cfg, cfg.figures_dir)
     fig8_hypsometry(ref_arr, glacier_mask, cfg, cfg.figures_dir)
-    fig9_sensitivity_B_vs_A(leer_csv(cfg.dod_csv), cfg.figures_dir)
+    fig9_sensitivity_B_vs_A(read_csv(cfg.dod_csv), cfg.figures_dir)
 
     # Copiar GeoTIFFs DoD a report/dod_geotiffs
     dod_geotiff_dir = cfg.root / "report" / "dod_geotiffs"

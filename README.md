@@ -25,6 +25,7 @@ NK-native/
 │   ├── config.py           # resolución de rutas y parámetros
 │   ├── io.py               # lectura/escritura CSV
 │   ├── raster.py           # lectura/máscara/escritura de GeoTIFF
+│   ├── deramp.py           # deramp polinómico por bloques (memoria acotada)
 │   └── stats.py            # NMAD, diferencias, polinomios, bloques CV
 ├── scripts/                # pipeline por pasos (00 → 04 + pruebas)
 │   ├── 00-check-input.py
@@ -36,12 +37,14 @@ NK-native/
 │   ├── 05-preinforme.py    # dossier PDF de revisión (auxiliar)
 │   ├── test.py
 │   └── test_glaciar_vs_estable.py
-├── tests/                  # pruebas unitarias (21 tests)
+├── tests/                  # pruebas unitarias (28 tests)
 │   ├── test_config.py
 │   ├── test_stats.py
 │   ├── test_cv_equivalence.py
 │   ├── test_n_eff.py
-│   └── test_validacion_poligono.py
+│   ├── test_validacion_poligono.py
+│   ├── test_deramp.py
+│   └── test_deramp_semantics.py
 ├── data/                   # polígomos de apoyo (versionados, <1 MB)
 │   ├── glaciar_2017.gpkg
 │   └── stable_terrain.gpkg
@@ -120,6 +123,8 @@ pytest tests/
 - `report/dod_geotiffs/` — GeoTIFFs del DoD (copia local, no se sube).
 - `report/preinforme.pdf` — dossier de revisión con tablas, figuras y pendientes
   (no es el informe final; tampoco se sube).
+- `report/report_final.md` — **informe final** en formato de artículo científico
+  (este sí se versiona).
 
 Todos los archivos de salida son **regenerables** ejecutando los scripts
 desde cero; por eso no se versionan.

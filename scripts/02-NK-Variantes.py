@@ -24,6 +24,7 @@ warnings.filterwarnings("ignore", message=".*partition.*MaskedArray.*")
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from nkdem.config import load_config, require_files  # noqa: E402
+from nkdem.deramp import ajustar_deramp, aplicar_deramp  # noqa: E402
 from nkdem.io import write_csv  # noqa: E402
 from nkdem.raster import load_dem_with_mask  # noqa: E402
 from nkdem.stats import (  # noqa: E402
@@ -178,14 +179,13 @@ def main() -> None:
     ref_arr, transform, ref_crs, ref_mask = load_dem_with_mask(
         cfg.reference_dem, cfg.stable_terrain
     )
-
     filas = []
 
     for year in [y for y in cfg.years if y != cfg.reference_year]:
         path = cfg.nk_dem(year)
         print(f"\n--- DEM {year} ---")
         try:
-            dem_nk, dem_mask, _, dem_crs = load_dem_with_mask(
+            dem_nk, dem_transform, dem_crs, dem_mask = load_dem_with_mask(
                 path, cfg.stable_terrain
             )
             stable_mask = ref_mask & dem_mask
@@ -196,31 +196,32 @@ def main() -> None:
             med_nk, nmad_nk, _ = difference_stats(diff_nk, stable_mask)
             print(f"  [NK]            Mediana: {med_nk:+.3f} m | NMAD: {nmad_nk:.3f} m")
             out_nk = output_dir / f"{year}_NK.tif"
-            import rasterio
-
-            with rasterio.open(path) as src:
-                variant_transform = src.transform
-                variant_crs = src.crs
+            variant_transform, variant_crs = dem_transform, dem_crs
 
             from nkdem.raster import write_geotiff  # noqa: E402
 
             write_geotiff(out_nk, dem_nk, variant_transform, variant_crs)
 
-            # deramp3 in-sample con xdem (1 vez por año, aceptable)
-            deramp3 = xdem.coreg.Deramp(poly_order=POLY_ORDER)
-            dem_nk_xdem = xdem.DEM(str(path))
-            deramp3.fit(
-                dem_nk_xdem, dem_nk_xdem, inlier_mask=stable_mask
+            # deramp3: polinomio completo de grado 3 ajustado sobre el
+            # residual (ref - NK) en terreno estable con numpy.linalg.lstsq y
+            # aplicado al DEM completo por bloques de filas.
+            # Se usa nkdem.deramp (equivalente a xdem.coreg.Deramp, verificado
+            # en tests/) porque aplicar el polinomio con xdem duplica el DEM de
+            # 94 M de píxeles y agota la memoria disponible.
+            modelo_d3 = ajustar_deramp(
+                ref_arr, dem_nk, stable_mask, dem_transform, POLY_ORDER
             )
-            dem_d3 = deramp3.apply(dem_nk_xdem)
-            diff_d3 = dem_d3.data - ref_arr
+            d3_data = aplicar_deramp(dem_nk, dem_transform, modelo_d3)
+
+            diff_d3 = d3_data - ref_arr
             med_d3, nmad_d3, _ = difference_stats(diff_d3, stable_mask)
             print(
                 f"  [NK+deramp3]    Mediana: {med_d3:+.3f} m | NMAD: {nmad_d3:.3f} m"
             )
             out_d3 = output_dir / f"{year}_deramp3.tif"
-            write_geotiff(out_d3, dem_d3.data, variant_transform, variant_crs)
-            del diff_d3, dem_d3; gc.collect()
+            write_geotiff(out_d3, d3_data, variant_transform, variant_crs)
+            del diff_d3
+            gc.collect()
 
             # CV espacial con numpy (rápida)
             print(
@@ -246,7 +247,7 @@ def main() -> None:
                 nmad_cv < nmad_nk_cv
             )
             if cv_acepta:
-                dem_cv, med_cv, nmad_cv_final = dem_d3.data, med_d3, nmad_d3
+                dem_cv, med_cv, nmad_cv_final = d3_data, med_d3, nmad_d3
                 print(
                     f"  [NK+deramp-CV]  ACEPTADO  -> se guarda como deramp3."
                 )
@@ -257,7 +258,8 @@ def main() -> None:
                 )
             out_cv = output_dir / f"{year}_derampCV.tif"
             write_geotiff(out_cv, dem_cv, variant_transform, variant_crs)
-            del dem_cv; gc.collect()
+            del dem_cv, d3_data, diff_nk, dem_nk
+            gc.collect()
 
             filas.append(
                 {

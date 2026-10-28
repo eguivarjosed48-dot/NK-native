@@ -50,8 +50,9 @@ FIGURAS = [
      "Distribuciones del cambio de elevación por año. Permite comparar magnitud y dispersión."),
     ("F8_dod_hypsometry.png", "Figura 8. Hipsometría del cambio",
      "dH mediano por franja altitudinal. Muestra si el adelgazamiento es altitudinalmente dependiente."),
-    ("F9_sensitivity_B_vs_A.png", "Figura 9. Sensibilidad Opción B vs Opción A",
-     "Comparación de volúmenes entre la variante conservadora (todo NK) y la mixta (con deramp3 en 2018)."),
+    ("F9_sensitivity_B_vs_A.png", "Figura 9. Sensibilidad a la variante de co-registro",
+     "Volúmenes de las opciones B (todo NK), A (variante aceptada por la CV) y C (deramp3 forzado en todos los años)."),
+
 ]
 
 
@@ -223,9 +224,11 @@ def main():
     story.append(Spacer(1, 0.5 * cm))
     story.append(Paragraph(
         "<b>Opción B</b>: todos los años con NK (consistencia metodológica). "
-        "<b>Opción A</b>: variante mixta (2017 y 2023 con NK, 2018 con deramp3, "
-        "según decisión de la CV). La diferencia entre ambas es la sensibilidad "
-        "metodológica del resultado.",
+        "<b>Opción A</b>: para cada año, la variante aceptada por la validación "
+        "cruzada del Paso 2 (NK o deramp3). <b>Opción C</b>: deramp3 forzado en "
+        "todos los años, es decir, el resultado que se obtendría aplicando el "
+        "deramp sin verificación estadística. Las diferencias entre opciones "
+        "cuantifican la sensibilidad metodológica del resultado.",
         styles["Cuerpo"],
     ))
     story.append(PageBreak())
