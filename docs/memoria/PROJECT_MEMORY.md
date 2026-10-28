@@ -250,9 +250,10 @@ por git (`report/figures/`, `report/tables/`, `report/dod_geotiffs/`, `report/*.
   - `f1e6069` — "chore: proyecto base NK-native listo para GitHub"
 - **Working tree:** limpio tras la regeneración; solo quedan directorios de salida ignorados.
 - **Tests:** `pytest tests/` → **28 tests pasando** (7 archivos).
-- **Remoto:** aún no configurado (pendiente crear repo en GitHub)
+- **Remoto:** `origin` → `git@github.com:eguivarjosed48-dot/NK-native.git` (público).
+- **Publicado:** rama `main` en `a55b716` y tag anotado `v0.1.0`; CI (`.github/workflows/tests.yml`) en verde.
 
-Cuando exista el repositorio en GitHub (cuenta `eguivarjosed48-dot`, nombre `NK-native`, **vacío**, sin README/.gitignore/LICENSE):
+Primera publicación (ya ejecutada el 2026-10-28):
 
 ```bash
 cd /Users/eguivar/Documents/dev/NK-native

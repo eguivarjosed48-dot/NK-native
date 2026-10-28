@@ -91,8 +91,8 @@ Tamaño estimado del repositorio versionable: < 5 MB.
 ## 6. Próximos pasos (pendientes)
 
 - [x] Crear repositorio local con git y primer commit.
-- [ ] Crear el repositorio vacío en GitHub (cuenta: `eguivarjosed48-dot`).
-- [ ] Conectar remoto y hacer push:
+- [x] Crear el repositorio vacío en GitHub (cuenta: `eguivarjosed48-dot`).
+- [x] Conectar remoto y hacer push (`main` + tag `v0.1.0`):
       ```bash
       git remote add origin git@github.com:eguivarjosed48-dot/NK-native.git
       git branch -M main

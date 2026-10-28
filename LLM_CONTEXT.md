@@ -13,7 +13,7 @@ Contenido completo en: `docs/memoria/PROJECT_MEMORY.md`.
   4. **Bug corregido (2026-10-28):** el Paso 2 no era ejecutable (desempaquetado erróneo de `load_dem_with_mask`) y `deramp3.fit(dem, dem)` ajustaba el polinomio contra sí mismo (corrección nula). Cubierto por `tests/test_deramp_semantics.py`. El deramp se ajusta siempre como `fit(referencia, dem)`.
 - **Pendientes:** publicar en GitHub y completar los metadatos del Apéndice A del informe (afiliación, topónimo del glaciar, fechas/sensor de los vuelos, licencia).
 - **Ubicación:** `/Users/eguivar/Documents/dev/NK-native`
-- **Rama git:** `main`; árbol limpio salvo directorios de salida ignorados. Remoto sin configurar.
+- **Rama git:** `main`; remoto `origin` = `git@github.com:eguivarjosed48-dot/NK-native.git` (público, CI en verde, tag `v0.1.0`).
 - **Tests:** **28 tests pasando** en 7 archivos (`pytest tests/`). `py_compile` OK.
 
 ## Estructura clave
@@ -62,11 +62,12 @@ cfg.reference_dem, cfg.dem("2017"), cfg.nk_dem("2018"), cfg.dod_dir, ...
 
 Además: el deramp se ajusta **siempre** contra la referencia (`fit(ref, dem)`); `fit(dem, dem)` produce una corrección nula (ver `tests/test_deramp_semantics.py`).
 
-## Push a GitHub (pendiente)
+## GitHub (publicado el 2026-10-28)
+Repositorio público: <https://github.com/eguivarjosed48-dot/NK-native>  
+Rama `main` + tag `v0.1.0`; CI (pytest) en verde.
 ```bash
-git remote add origin git@github.com:eguivarjosed48-dot/NK-native.git
-git branch -M main
-git push -u origin main
+git push origin main          # futuros cambios
+git push origin --tags
 ```
 
 ## Archivo completo
