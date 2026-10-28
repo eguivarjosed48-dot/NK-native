@@ -1,13 +1,25 @@
 # NK-native
 
+[![tests](https://github.com/eguivarjosed48-dot/NK-native/actions/workflows/tests.yml/badge.svg)](https://github.com/eguivarjosed48-dot/NK-native/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 Co-registro y diferencia de elevación (DoD) de modelos digitales de elevación
-(DEM) de un glaciar, usando el método de **Nuth & Kääb** con auto-ajuste
-(deramp) y validación cruzada espacial. Proyecto académico de replicabilidad.
+(DEM) del **Glaciar Llojeta** (Cordillera Real, La Paz, Bolivia), usando el
+método de **Nuth & Kääb** con auto-ajuste (deramp) y validación cruzada
+espacial bloqueada, sobre una cuadrícula de 0,1 m (EPSG:32719).
+
+El resultado principal está en [`report/report_final.md`](report/report_final.md),
+el informe final en formato de artículo científico. Este repositorio es la
+versión consolidada y a resolución nativa del estudio; las etapas previas, con
+otra organización del código, están en
+[`llojeta-coregistration-pipeline`](https://github.com/eguivarjosed48-dot/llojeta-coregistration-pipeline)
+y
+[`llojeta-dod-pipeline`](https://github.com/eguivarjosed48-dot/llojeta-dod-pipeline).
 
 > ⚠️ Los rásteres fuente (DEMs crudos y derivados) **no se versionan** en este
 > repositorio por su peso (~2.8 GB). Solo se versionan el código, la
-> configuración, los polígomos de apoyo (`data/*.gpkg`) y los resultados
-> ligeros (tablas y figuras del informe).
+> configuración, los polígonos de apoyo (`data/*.gpkg`) y el informe final; las
+> tablas, figuras y el PDF de revisión son regenerables.
 
 ## Estructura
 

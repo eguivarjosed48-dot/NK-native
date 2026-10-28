@@ -1,4 +1,4 @@
-# Balance de masa geodésico de un glaciar andino (2017–2025) a partir de DSM de dron: co-registro Nuth & Kääb y validación cruzada espacial
+# Balance de masa geodésico del Glaciar Llojeta (Andes tropicales, 2017–2025) a partir de DSM de dron: co-registro Nuth & Kääb y validación cruzada espacial
 
 **Jose Mauricio Eguivar Duran**<sup>1</sup>
 
@@ -13,9 +13,10 @@ para cuantificar el cambio de volumen de glaciares pequeños y sin series de
 balance de masa *in situ*. Su precisión depende críticamente de dos pasos: el
 co-registro de cada DSM a una referencia común y la corrección de sesgos
 espacialmente sistemáticos (deramp), cuya extrapolación fuera del terreno de
-control rara vez se evalúa. En este trabajo se estima el cambio de elevación de
-un glaciar de los Andes tropicales (≈16,05° S, 68,30° O; 0,18 km²; 5.035–5.272 m
-s.n.m.) entre 2017, 2018 y 2023 respecto de un DSM de referencia de 2025,
+control rara vez se evalúa. En este trabajo se estima el cambio de elevación del
+Glaciar Llojeta (Cordillera Real, La Paz, Bolivia; ≈16,05° S, 68,30° O; 0,18 km²;
+5.035–5.272 m s.n.m.) entre 2017, 2018 y 2023 respecto de un DSM de referencia de
+2025,
 utilizando cuatro DSM derivados de fotogrametría con dron sobre una cuadrícula
 común de 0,1 m (EPSG:32719). El co-registro se resolvió con el algoritmo de
 Nuth & Kääb, seguido de un deramp polinómico bidimensional de grado 3 y de una
@@ -49,8 +50,9 @@ change of small glaciers lacking in-situ mass-balance series, and its accuracy
 hinges on two steps: co-registration of every DEM to a common reference and the
 correction of spatially systematic biases (deramp), whose extrapolation beyond
 the control terrain is seldom assessed. We quantify elevation change of a
-tropical Andean glacier (≈16.05° S, 68.30° W; 0.18 km²; 5,035–5,272 m a.s.l.)
-between 2017, 2018 and 2023 relative to a 2025 reference DSM, using four
+Llojeta Glacier, Cordillera Real, La Paz, Bolivia (≈16.05° S, 68.30° W; 0.18 km²;
+5,035–5,272 m a.s.l.) between 2017, 2018 and 2023 relative to a 2025 reference
+DSM, using four
 drone-derived DSMs on a common 0.1 m grid (EPSG:32719). Co-registration used the
 Nuth & Kääb algorithm, followed by a third-order two-dimensional polynomial
 deramp and a blocked (4 × 4) spatial cross-validation that decides, year by
@@ -134,8 +136,11 @@ precisamente el escenario típico de los glaciares pequeños de montaña.
 
 ## 2. Área de estudio
 
-El área de estudio comprende un glaciar de montaña de los Andes tropicales
-situado en las coordenadas aproximadas 16,05° S y 68,30° O (Figura 1). El área
+El área de estudio es el Glaciar Llojeta, un glaciar de montaña de la Cordillera
+Real en el departamento de La Paz (Bolivia), situado en las coordenadas
+aproximadas 16,05° S y 68,30° O (Figura 1). Se trata de un glaciar de pequeño
+tamaño y pendiente moderada, representativo de los cuerpos de hielo de la
+cordillera. El área
 de análisis está delimitada por la huella del DSM de referencia, de
 0,96 km × 0,98 km (≈0,94 km²), y se distribuye entre ≈4.915 y ≈5.283 m s.n.m.
 
@@ -169,7 +174,7 @@ blanca en el polígono rojo.
 ### 3.1 DSM y cuadrícula de referencia
 
 Se utilizaron cuatro DSM derivados de fotogrametría con dron correspondientes a
-2017, 2018, 2023 y 2025. El DSM de 2025 se adoptó como referencia y define la
+2017, 2018, 2023 y 2025_B del Glaciar Llojeta. El DSM de 2025 se adoptó como referencia y define la
 cuadrícula maestra del análisis: proyección UTM de la zona 19S (EPSG:32719),
 resolución de 0,1 m y 9.780 × 9.591 píxeles. Todos los DSM fueron remuestreados
 por el procedimiento de alineación del paso 0 del *pipeline* a esa cuadrícula,
@@ -681,10 +686,14 @@ precisión de unos pocos por ciento.
 ## Disponibilidad de datos y código
 
 El *pipeline* completo (pasos 00–05), los polígonos de apoyo y las pruebas
-unitarias (28) están en el repositorio del proyecto. Los DSM de entrada no se
-distribuyen por su tamaño; las rutas se declaran en un archivo de configuración
-local. Los resultados intermedios (DEM co-registrados, DoD en GeoTIFF, tablas y
-figuras) son regenerables ejecutando los scripts en orden.
+unitarias (28) están en <https://github.com/eguivarjosed48-dot/NK-native>. Los
+DSM de entrada no se distribuyen por su tamaño; las rutas se declaran en un
+archivo de configuración local. Los resultados intermedios (DEM co-registrados,
+DoD en GeoTIFF, tablas y figuras) son regenerables ejecutando los scripts en
+orden. El co-registro y el balance de masa en resolución original también se
+publican, como etapas independientes del mismo estudio, en
+<https://github.com/eguivarjosed48-dot/llojeta-coregistration-pipeline> y
+<https://github.com/eguivarjosed48-dot/llojeta-dod-pipeline>.
 
 ## Agradecimientos
 
@@ -737,9 +746,9 @@ completarse o verificarse por el autor antes de someter el manuscrito:
 
 1. **Afiliación institucional** del autor (la versión actual indica «autor
    independiente»).
-2. **Topónimo y cordillera** del glaciar: las coordenadas (16,05° S, 68,30° O)
-   sitúan el área en los Andes tropicales, pero el nombre del glaciar no está
-   registrado en el proyecto.
+2. **Topónimo y cordillera**: se usa «Glaciar Llojeta (Cordillera Real, La Paz,
+   Bolivia)», coherente con los repositorios previos del mismo estudio; conviene
+   confirmar la denominación oficial/local y el macizo exacto antes del envío.
 3. **Fechas exactas de cada vuelo** y sensor/cámara utilizados, así como el GSD
    efectivo y el error vertical absoluto declarado por el proveedor de los DSM.
 4. **Densidad de conversión** empleada (aquí 850 kg m⁻³, Huss, 2013) o, si se

@@ -64,7 +64,7 @@ Además: el deramp se ajusta **siempre** contra la referencia (`fit(ref, dem)`);
 
 ## Push a GitHub (pendiente)
 ```bash
-git remote add origin https://github.com/eguivar/NK-native.git
+git remote add origin git@github.com:eguivarjosed48-dot/NK-native.git
 git branch -M main
 git push -u origin main
 ```

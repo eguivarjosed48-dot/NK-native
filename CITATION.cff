@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: >-
+  Si utiliza este código o sus resultados, cite este repositorio y el informe
+  final incluido en report/report_final.md.
+type: software
+title: >-
+  NK-native: co-registro Nuth & Kääb, deramp con validación cruzada y DoD de
+  DEMs del Glaciar Llojeta (2017-2025)
+abstract: >-
+  Pipeline reproducible en Python para co-registrar DSM multitemporales con el
+  algoritmo de Nuth & Kääb, evaluar un deramp polinómico de grado 3 mediante
+  validación cruzada espacial bloqueada y calcular el DoD y el balance de masa
+  geodésico del Glaciar Llojeta (Cordillera Real, La Paz, Bolivia) sobre una
+  cuadrícula de 0,1 m.
+authors:
+  - family-names: Eguivar Duran
+    given-names: Jose Mauricio
+    email: eguivar.jose.d48@gmail.com
+repository-code: https://github.com/eguivarjosed48-dot/NK-native
+url: https://github.com/eguivarjosed48-dot/NK-native
+license: MIT
+version: 0.1.0
+date-released: 2026-10-28
+keywords:
+  - glaciologia
+  - balance de masa geodesico
+  - DEM of difference
+  - Nuth & Kääb
+  - deramp
+  - validacion cruzada espacial
+  - fotogrametria con dron
+  - Andes tropicales
+  - Bolivia

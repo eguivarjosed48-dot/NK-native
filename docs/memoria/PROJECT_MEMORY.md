@@ -252,11 +252,11 @@ por git (`report/figures/`, `report/tables/`, `report/dod_geotiffs/`, `report/*.
 - **Tests:** `pytest tests/` → **28 tests pasando** (7 archivos).
 - **Remoto:** aún no configurado (pendiente crear repo en GitHub)
 
-Cuando exista el repositorio en GitHub (usuario `eguivar`, nombre `NK-native`, **vacío**, sin README/.gitignore/LICENSE):
+Cuando exista el repositorio en GitHub (cuenta `eguivarjosed48-dot`, nombre `NK-native`, **vacío**, sin README/.gitignore/LICENSE):
 
 ```bash
 cd /Users/eguivar/Documents/dev/NK-native
-git remote add origin https://github.com/eguivar/NK-native.git
+git remote add origin git@github.com:eguivarjosed48-dot/NK-native.git
 git branch -M main
 git push -u origin main
 ```
