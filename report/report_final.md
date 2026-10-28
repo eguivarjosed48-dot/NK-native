@@ -115,7 +115,7 @@ deramp por convención, o descartarlo si el error en terreno estable empeora
 *in-sample*, sin una prueba espacialmente honesta.
 
 Este trabajo tiene tres objetivos. Primero, estimar el cambio de elevación y de
-volumen de un glaciar andino de ~0,18 km² entre 2017, 2018 y 2023 respecto de un
+volumen del Glaciar Llojeta (~0,18 km²) entre 2017, 2018 y 2023 respecto de un
 DSM de referencia de 2025, con datos de dron a 0,1 m de resolución. Segundo,
 someter la decisión de aplicar el deramp a una validación cruzada espacial
 bloqueada, de modo que la variante elegida se justifique con una métrica fuera
