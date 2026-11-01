@@ -10,9 +10,9 @@
 **Nombre:** NK-native  
 **Autor:** Jose Mauricio Eguivar Duran (eguivar.jose.d48@gmail.com)  
 **Fecha de creación:** 2026-10-27  
-**Última actualización:** 2026-10-28  
+**Última actualización:** 2026-11-01  
 **Ubicación:** `/Users/eguivar/Documents/dev/NK-native`  
-**Estado:** Pipeline 00→05 completo, reproducible y verificado de extremo a extremo; resultados regenerados el 2026-10-28 e informe final redactado (`report/report_final.md`). Pendiente: publicar en GitHub.
+**Estado:** Pipeline 00→06 completo, reproducible y verificado de extremo a extremo; resultados regenerados el 2026-11-01, informe final redactado (`report/report_final.md`) y marco de confianza redactado (`report/MARCO_CONFIANZA.md`). Publicado en GitHub (rama `main`, tag `v0.1.0`); pendiente commit de la actualización del Paso 6 y del informe final.
 
 **Qué hace:** Co-registro y diferencia de elevación (DoD) de modelos digitales de elevación (DEM) de un glaciar.  
 **Método principal:** Nuth & Kääb (NK) con auto-ajuste (deramp, polinomio grado 3) y validación cruzada espacial bloqueada (CV vectorizada con numpy).  
@@ -44,8 +44,9 @@ NK-native/
 │   ├── 02-deramp-autotune.py# Paso 2 (alt): deramp auto-tune -> dems_deramped/
 │   ├── 02-NK-Variantes.py   # Paso 2 (principal): NK | deramp3 | deramp-CV -> dems_variants/ + coreg_variants_summary.csv
 │   ├── 03-DoD.py            # Paso 3: DEM of Difference -> dod/ + dod_summary.csv + dod_figures/
-│   ├── 04-report.py         # Paso 4: figuras F1-F9 + tablas T3-T6 -> report/
+│   ├── 04-report.py         # Paso 4: figuras F1-F9 + tablas T3-T6 + consolidado T6_report_main.md -> report/
 │   ├── 05-preinforme.py     # Paso 5 (auxiliar): dossier PDF de revisión -> report/preinforme.pdf
+│   ├── 06-confianza.py      # Paso 6: figuras F10-F14 + tablas T8-T13 (confianza) -> report/
 │   ├── test.py              # Crea data/glaciar_2017.gpkg desde shapefile fuente local
 │   └── test_glaciar_vs_estable.py # Diagnóstico glaciar vs zona estable -> test_outputs/
 ├── conftest.py              # pytest: añade la raíz del repo a sys.path
@@ -71,7 +72,7 @@ NK-native/
     ├── dod/
     ├── dod_figures/
     ├── test_outputs/
-    └── report/  (figures/, tables/, dod_geotiffs/, preinforme.pdf)
+    └── report/  (figures/, tables/, dod_geotiffs/, preinforme.pdf, report_final.md, MARCO_CONFIANZA.md)
 ```
 
 **Regla de oro:** los rásteres (.tif) y los CSVs de resultados no se versionan. Tamaño estimado del repo versionable: < 5 MB.
@@ -135,8 +136,9 @@ Desde la raíz con el entorno activado (`source .venv/bin/activate`):
 | 1 | `scripts/01-nuth-kaab.py` | `dems_alineados/`, `data/stable_terrain.gpkg` | `dems_nk/dem_<year>_nk.tif` |
 | 2 | `scripts/02-NK-Variantes.py` | `dems_nk/` | `dems_variants/<year>_{NK,deramp3,derampCV}.tif` + `coreg_variants_summary.csv` |
 | 3 | `scripts/03-DoD.py` | `dems_variants/`, `data/glaciar_2017.gpkg` | `dod/<year>_vs_2025_{A,B,C}.tif` + `dod_summary.csv` |
-| 4 | `scripts/04-report.py` | salidas anteriores | `report/figures/F1-F9.png`, `report/tables/T3-T6.md/csv` |
-| 5 (aux) | `scripts/05-preinforme.py` | `report/tables/T3-T5.csv`, `report/figures/F1-F9.png` | `report/preinforme.pdf` (dossier de revisión) |
+| 4 | `scripts/04-report.py` | salidas anteriores | `report/figures/F1-F9.png`, `report/tables/T3-T6.md/csv`, `T6_report_main.md` |
+| 5 (aux) | `scripts/05-preinforme.py` | `report/tables/T3-T5.csv`, `report/tables/T8-T13.csv`, `report/figures/F1-F14.png` | `report/preinforme.pdf` (dossier de revisión) |
+| 6 | `scripts/06-confianza.py` | `dems_variants/`, `coreg_variants_summary.csv`, `dod_summary.csv`, `data/stable_terrain.gpkg`, `data/glaciar_2017.gpkg` | `report/figures/F10-F14.png`, `report/tables/T8-T13.csv` |
 
 Scripts opcionales/diagnóstico: `scripts/02-deramp-autotune.py`, `scripts/test.py`, `scripts/test_glaciar_vs_estable.py`.
 
@@ -147,6 +149,14 @@ del repo (usa rutas relativas `report/`, `report/tables/`, `report/figures/`; no
 El Paso 3 calcula tres opciones de DoD: **B** (principal, todo NK), **A** (variante aceptada por
 la CV del Paso 2, leída de `coreg_variants_summary.csv`) y **C** (deramp3 forzado en todos los
 años, usada como análisis de sensibilidad).
+
+El Paso 6 calcula la justificación formal de confianza en la señal: NMAD por franja de pendiente
+(Tabla 8), R²_aspecto y R²_Z (Tabla 8b), variograma y N_eff (Tabla 9), propagación al volumen en
+tres escenarios de N_eff (Tabla 10), comparación con literatura (Tabla 11), control de
+extrapolación (Tabla 12) y consistencia temporal (Tabla 13). Genera las figuras F10–F14.
+
+El Paso 4 consolida T3–T5 + T8–T13 + conclusión de confianza en `report/tables/T6_report_main.md`.
+El Paso 5 lee esos CSVs y genera el dossier PDF.
 
 Nota sobre scripts legacy: `scripts/02-deramp-autotune.py` es la versión anterior del Paso 2
 (deramp polinómico sin validación cruzada espacial ni variantes NK/deramp3/derampCV). Se conserva
@@ -214,34 +224,57 @@ parte dentro del dominio de control), pero la CV muestra que, pese a ello, la co
 extrapolada no generaliza: en 2018 es ≈+0,13 m sobre el terreno estable y ≈−1,12 m sobre el
 glaciar. Es una extrapolación, no una deformación observada.
 
-Incertidumbre del volumen (ruido del co-registro): σ_V = 1.651 / 618 / 437 m³ (0,09 / 0,04 /
-0,06 %); la incertidumbre total, dominada por términos sistemáticos, se estima en 10–15 %.
+Incertidumbre del volumen (Paso 6, tres escenarios de N_eff):
 
-Todos estos resultados están en `coreg_variants_summary.csv` y `dod_summary.csv` (no versionados, regenerables).
+| Año | V (10⁶ m³) | σ_V ultra (%) | z ultra | σ_V real (%) | z real |
+|-----|-----------|---------------|---------|--------------|--------|
+| 2017 | +1.751 | 4.60% | 21.7 | 0.32% | 310.6 |
+| 2018 | +1.375 | 5.20% | 19.2 | 0.37% | 273.2 |
+| 2023 | +0.738 | 7.49% | 13.3 | 0.52% | 190.6 |
+
+En el escenario ultraconservador (N_eff=1, correlación total del error), σ_V = 4.2–7.5% del volumen
+y z = 13.3–21.7. En el realista (N_eff=200, correlación a 30 m), σ_V = 0.3–0.5% y z > 190. **En
+todos los escenarios, la señal es significativa con z > 13.**
+
+Control de extrapolación (Tabla 12): los tres años pasan el control (`ok=True`). La corrección
+máxima del deramp3 en 2018 (2.49 m) está dentro de la guarda (3.00 m).
+
+Consistencia temporal (Tabla 13): las tasas anuales son 0.179 (2017–2018), 0.167 (2018–2023) y
+0.169 × 10⁶ m³/año (2017–2023), con ratio 1.08. No hay evento anómalo en 2018.
+
+Todos estos resultados están en `coreg_variants_summary.csv`, `dod_summary.csv` y
+`report/tables/T8–T13.csv` (no versionados, regenerables).
 
 ---
 
-## 7.5. Informe y dossier de revisión
+## 7.5. Informe, marco de confianza y dossier de revisión
 
-- `report/preinforme.pdf` — **dossier de revisión** generado por `scripts/05-preinforme.py`
-  (portada, propósito, tablas T3–T5, las 9 figuras con pies y lista de pendientes).
-  **No** es el informe científico final.
 - `report/report_final.md` — **informe final** en formato de artículo científico (redactado el
-  2026-10-28 con los resultados regenerados; ver §7). Es el único archivo de `report/` que se
+  2026-11-01 con los resultados regenerados; ver §7). Es el único archivo de `report/` que se
   versiona.
-- `report/tables/T6_report_main.md` — tablas consolidadas T3–T5 en markdown.
-- `report/figures/F1–F9` — figuras generadas por `scripts/04-report.py`.
+- `report/MARCO_CONFIANZA.md` — **marco de confianza** autocontenido (redactado el 2026-11-01).
+  Explica cada métrica del Paso 6 (NMAD por pendiente, R²_aspecto, R²_Z, variograma, N_eff,
+  σ_V, z, guarda de extrapolación, consistencia temporal), con sus valores reales, referencias
+  a los CSVs y limitaciones. Es la fuente de la sección "Confianza en la señal" del informe final.
+- `report/preinforme.pdf` — **dossier de revisión** generado por `scripts/05-preinforme.py`
+  (portada, propósito, tablas T3–T5, T10, T12, las 14 figuras F1–F14 con pies y lista de
+  pendientes). **No** es el informe científico final.
+- `report/tables/T6_report_main.md` — tablas consolidadas T3–T5 + T8–T13 + conclusión de
+  confianza, en markdown.
+- `report/figures/F1–F14` — figuras generadas por `scripts/04-report.py` (F1–F9) y
+  `scripts/06-confianza.py` (F10–F14).
 
-Tanto `report/preinforme.pdf` como las figuras y tablas son **regenerables** y están ignorados
-por git (`report/figures/`, `report/tables/`, `report/dod_geotiffs/`, `report/*.pdf`).
-
+`report/report_final.md` y `report/MARCO_CONFIANZA.md` **sí se versionan**. Tanto
+`report/preinforme.pdf` como las figuras y tablas son **regenerables** y están ignorados por git
+(`report/figures/`, `report/tables/`, `report/dod_geotiffs/`, `report/*.pdf`).
 ---
 
 ## 8. Estado de Git y despliegue a GitHub
 
 - **Rama:** `main`
-- **Último commit:** ver `git log --oneline -1` (esta memoria se actualiza en el mismo commit que
-  los resultados regenerados del 2026-10-28).
+- **Último commit:** ver `git log --oneline -1`.
+- **Working tree:** con cambios pendientes (Paso 6, `05-preinforme.py` actualizado,
+  `report_final.md`, `MARCO_CONFIANZA.md`). Pendiente hacer un commit y push con la actualización.
 - **Historial relevante:**
   - `c2a1822` — "docs: cerrar PROJECT_MEMORY y LLM_CONTEXT (paso 05, tests y estado git)"
   - `75aadaf` — "docs: sincronizar memoria, renumerar secciones, sección de informe y versiones"
@@ -264,6 +297,14 @@ git push -u origin main
 
 **Qué NO debe subirse jamás:** `.venv/`, `dems_*/`, `dod/`, `report/`, `test_outputs/`, `data/raw/`, `config.local.toml`, `*.csv` de resultados, `report/*.pdf`, `.DS_Store`.  
 **Qué SÍ se sube:** código Python, `config.toml`, `requirements.txt`, `README.md`, `LICENSE`, `.gitignore`, `.gitattributes`, `tests/`, `docs/memoria/`, `data/*.gpkg`.
+
+**Archivos nuevos en el commit pendiente:**
+- `scripts/06-confianza.py` (Paso 6).
+- `report/MARCO_CONFIANZA.md` (marco de confianza).
+- `report/report_final.md` (informe final).
+- `scripts/05-preinforme.py` (actualizado con F10–F14 y Tablas 10/12).
+- `scripts/04-report.py` (actualizado con la sección de confianza).
+- Actualizaciones de `PROJECT_MEMORY.md` y `LLM_CONTEXT.md`.
 
 ---
 
@@ -365,6 +406,53 @@ por la variabilidad real del adelgazamiento). Con el ruido del terreno estable, 
 (1.651, 618 y 437 m³). Los términos sistemáticos (variante, densidad, máscara) se discuten
 cualitativamente en el informe y llevan la incertidumbre total al 10–15 %.
 
+### Tres escenarios de N_eff en la propagación de error (Paso 6)
+
+`scripts/06-confianza.py` reporta tres escenarios de N_eff en la Tabla 10:
+
+- **Ultraconservador** (N_eff=1): todo el glaciar comparte el error. Es el peor caso posible.
+- **Conservador** (N_eff del variograma): coincide con el ultra porque el rango de correlación
+  (1115–2012 m) excede el tamaño del glaciar (~430 m de lado).
+- **Realista** (N_eff=200): asume correlación a 30 m, típica de DEM de dron. Es una asunción
+  externa, no una medición de estos datos, y se reporta solo como cota superior de la significancia.
+
+**Motivo:** el rango del variograma es una cota inferior (mayor que el dominio de la zona
+estable), así que el N_eff real no se puede medir con precisión. En lugar de inventar un valor
+intermedio, se reportan los tres escenarios. El argumento de confianza se construye mostrando
+que **incluso en la cota inferior (N_eff=1), la señal es significativa con z > 13**. Eso es más
+honesto que asumir un N_eff intermedio no justificado.
+
+### Variograma en zona estable enmascarada (Paso 6)
+
+`scripts/06-confianza.py` enmascara el residual fuera de la zona estable (`diff[~ref_mask] = np.nan`)
+antes de llamar a `estimar_n_eff`. Además, submuestrea a ~1M de píxeles con `step = sqrt(n/1M)+1`
+para acelerar el cálculo.
+
+**Motivo:** el residual `arr - ref_arr` incluye el cambio glaciar real (~9 m) en el glaciar, no
+solo el error del DEM. Mezclar error (zona estable) con señal (glaciar) contamina el variograma
+y produce rangos artificialmente grandes. Enmascarar deja solo error puro. El submuestreo reduce
+el coste de ~30 min/año a ~20 s/año sin cambiar el rango estimado.
+
+### Métricas de diagnóstico de tilt (R²_aspecto y R²_Z)
+
+`scripts/06-confianza.py` calcula R²_aspecto (R² de `residual ~ cos(aspecto)`) y R²_Z (R² de
+`residual ~ elevación`) antes y después de la corrección.
+
+**Motivo:** el NMAD mide dispersión pero no estructura direccional. El R²_aspecto detecta sesgo
+horizontal no corregido (debe bajar tras NK). El R²_Z detecta sesgo vertical no corregido (debe
+bajar tras deramp3 si el deramp3 es correcto). En 2018, el deramp3 reduce el R²_aspecto de 0.0053
+a 0.0006 (factor 10.6), confirmando que capturó un sesgo real.
+
+### Control de extrapolación con flag y guarda
+
+`scripts/06-confianza.py` calcula un flag de extrapolación (celdas del glaciar dentro del hull
+de la zona estable y dentro del rango de cota de la zona estable) y una guarda
+(`max(3 m, 2.5·NMAD)`). Compara `max_extrap` con la guarda para decidir `ok=True/False`.
+
+**Motivo:** el deramp3 se ajusta en zona estable y se aplica al glaciar. Si el glaciar está
+fuera del hull, la corrección es una extrapolación. La guarda acota la corrección máxima
+permitida. En 2018, `max_extrap=2.49 m < guarda=3.00 m`, así que `ok=True`.
+
 ---
 
 ## 10. Reglas para futuras modificaciones (LLM / colaborador)
@@ -377,11 +465,11 @@ cualitativamente en el informe y llevan la incertidumbre total al 10–15 %.
 4. **Antes de cambios, ejecutar:** `pytest tests/` y verificar que pase.
 5. **Si se agrega un script nuevo:** ponerlo en `scripts/` y documentarlo en este archivo y en `README.md` (incluida su entrada en la tabla del §5 y sus dependencias en `requirements.txt`).
 6. **Si se cambia un parámetro metodológico:** actualizar `config.toml` sección `[params]` y este archivo.
-7. **Las pruebas unitarias viven en `tests/`** (5 archivos, 21 tests). Cubren `nkdem.config`,
-   `nkdem.stats` (`nmad`, polinomios, `estimar_n_eff`), la equivalencia de la CV con
-   `xdem.coreg.Deramp` y la validación de CRS de polígonos; los tests geoespaciales usan
-   `geopandas`/`rasterio`, que ya están en `requirements.txt`.
-
+7. **Las pruebas unitarias viven en `tests/`** (7 archivos, 28 tests). Cubren `nkdem.config`,
+   `nkdem.stats` (`nmad`, polinomios, `estimar_n_eff`), `nkdem.deramp` (ajuste/aplicación por
+   bloques), la equivalencia de la CV con `xdem.coreg.Deramp`, la validación de CRS de polígonos
+   y la semántica de `Deramp.fit(ref, dem)`. Los tests geoespaciales usan `geopandas`/`rasterio`,
+   que ya están en `requirements.txt`.
 ---
 
 ## 11. Archivos de memoria relacionados (en este mismo repo)
@@ -393,12 +481,22 @@ cualitativamente en el informe y llevan la incertidumbre total al 10–15 %.
 
 ## 12. Cómo retomar con un LLM en una sesión futura
 
-Al iniciar una nueva conversación sobre este proyecto, proporcionar este archivo (`PROJECT_MEMORY.md`) y, opcionalmente, `00-AUDITORIA.md`. Con eso el LLM tendrá:
+## 12. Cómo retomar con un LLM en una sesión futura
+
+Al iniciar una nueva conversación sobre este proyecto, proporcionar este archivo
+(`PROJECT_MEMORY.md`) y, opcionalmente, `00-AUDITORIA.md`. Con eso el LLM tendrá:
 - Estructura completa del repo.
 - Cómo configurar rutas en una máquina nueva.
-- Orden de ejecución del pipeline.
+- Orden de ejecución del pipeline (00→06).
 - Parámetros metodológicos y resultados de referencia.
+- Decisiones de diseño (CV con numpy, variograma enmascarado, tres escenarios de N_eff,
+  control de extrapolación).
 - Reglas de estilo y convención de código.
 - Estado de git y cómo publicar en GitHub.
 
-Si el LLM necesita modificar o ejecutar código, pedirle que use la venv de Python 3.12 en `.venv/` y que respete `config.local.toml` para las rutas de datos fuente.
+Para la sección de confianza en la señal, el LLM debe leer también
+`report/MARCO_CONFIANZA.md` (fuente completa de la metodología) y `report/report_final.md`
+(informe científico con los resultados).
+
+Si el LLM necesita modificar o ejecutar código, pedirle que use la venv de Python 3.12 en
+`.venv/` y que respete `config.local.toml` para las rutas de datos fuente.
