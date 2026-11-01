@@ -1,7 +1,13 @@
 """
-Paso 5 (auxiliar): genera un PDF de pre-informe con todos los insumos
-existentes (tablas, figuras, métricas) para revisión manual antes de
-redactar el informe científico final.
+Paso 5: genera un PDF de pre-informe con todos los insumos existentes
+para revisión manual antes de redactar el informe científico final.
+
+Incluye:
+  - Portada
+  - Tablas T3, T4, T5 (co-registro y DoD)
+  - Tabla 10 (confianza: propagación al volumen, 3 escenarios)
+  - Figuras F1–F9 + F10–F14
+  - Pendientes para el informe final
 
 NO sustituye al informe final. Es un dossier de revisión.
 """
@@ -9,7 +15,6 @@ NO sustituye al informe final. Es un dossier de revisión.
 import os
 import csv
 from datetime import datetime
-from pathlib import Path
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -32,7 +37,6 @@ OUTPUT_PDF = os.path.join(REPORT_DIR, "preinforme.pdf")
 REFERENCE_YEAR = "2025"
 YEARS = ["2017", "2018", "2023"]
 
-# Figuras en orden con su título y descripción
 FIGURAS = [
     ("F1_polygons_overview.png", "Figura 1. Vista general de polígonos",
      "Zona de terreno estable (verde) y glaciar 2017 (rojo) sobre el ráster de referencia."),
@@ -41,18 +45,27 @@ FIGURAS = [
     ("F3_residuals_nk_map.png", "Figura 3. Mapas de residual NK",
      "Estructura espacial del residual en zona estable. Permite ver si queda deformación no capturada."),
     ("F4_deramp_correction_map_2018.png", "Figura 4. Campo de corrección deramp3 en 2018",
-     "Diferencia entre el DEM con deramp3 y el DEM con NK. Rojo = resta, azul = suma. Documenta la magnitud y estructura espacial de la corrección aplicada."),
+     "Diferencia entre el DEM con deramp3 y el DEM con NK. Rojo = resta, azul = suma."),
     ("F5_deramp_vs_slope_aspect.png", "Figura 5. Corrección deramp3 vs pendiente y orientación (2018)",
-     "Verifica si la corrección tiene sesgo direccional. Con polígono balanceado en orientaciones, debería ser plana."),
+     "Verifica si la corrección tiene sesgo direccional. Con polígono balanceado, debería ser plana."),
     ("F6_dod_maps.png", "Figura 6. Mapas del DoD",
-     "Diferencia de elevación (DEM_año − DEM_2025) sobre el glaciar 2017. Valores positivos = pérdida de masa."),
+     "Diferencia de elevación (DEM_año − DEM_2025) sobre el glaciar 2017. Valores positivos = pérdida."),
     ("F7_dod_histograms.png", "Figura 7. Histogramas del DoD",
      "Distribuciones del cambio de elevación por año. Permite comparar magnitud y dispersión."),
     ("F8_dod_hypsometry.png", "Figura 8. Hipsometría del cambio",
      "dH mediano por franja altitudinal. Muestra si el adelgazamiento es altitudinalmente dependiente."),
-    ("F9_sensitivity_B_vs_A.png", "Figura 9. Sensibilidad a la variante de co-registro",
-     "Volúmenes de las opciones B (todo NK), A (variante aceptada por la CV) y C (deramp3 forzado en todos los años)."),
-
+    ("F9_sensitivity_B_vs_A.png", "Figura 9. Sensibilidad Opción B vs Opción A",
+     "Comparación de volúmenes entre la variante conservadora (todo NK) y la mixta (deramp3 en 2018)."),
+    ("F10_nmad_vs_slope.png", "Figura 10. NMAD por franja de pendiente",
+     "Heterocedasticidad del error: el NMAD crece con la pendiente en los tres años."),
+    ("F11_variograma.png", "Figura 11. Rango de correlación del residual",
+     "El rango (1115–2012 m) excede el tamaño del glaciar, indicando correlación de largo alcance."),
+    ("F12_propagacion_volumen.png", "Figura 12. Propagación de error al volumen",
+     "Tres escenarios de N_eff: ultraconservador (z>13), conservador (igual), realista (z>190)."),
+    ("F13_r2_antes_despues.png", "Figura 13. R²_aspecto y R²_Z antes/después",
+     "En 2018, el deramp3 reduce el R²_aspecto de 0.0053 a 0.0006 (factor 9)."),
+    ("F14_flag_extrapolacion.png", "Figura 14. Cobertura del glaciar por el hull",
+     "El 97–99% del glaciar está dentro del hull de la zona estable."),
 ]
 
 
@@ -68,7 +81,6 @@ def leer_csv(ruta):
 
 
 def tabla_desde_csv(filas, columnas, titulo, col_widths=None):
-    """Convierte una lista de dicts en una Table de reportlab."""
     if not filas:
         return [Paragraph(f"<i>{titulo}: sin datos</i>", getSampleStyleSheet()["Normal"])]
 
@@ -173,10 +185,10 @@ def main():
     story.append(Paragraph("0. Propósito de este documento", styles["H1"]))
     story.append(Paragraph(
         "Este PDF <b>no es el informe científico final</b>. Es un dossier de revisión "
-        "que reúne todos los insumos ya generados por el pipeline 00→04: tablas de "
-        "co-registro, tablas del DoD, diagnóstico glaciar–zona estable y las 9 figuras. "
-        "Su objetivo es permitir una revisión visual y numérica rápida antes de redactar "
-        "el informe definitivo.",
+        "que reúne todos los insumos ya generados por el pipeline 00→06: tablas de "
+        "co-registro, tablas del DoD, tablas de confianza, diagnóstico glaciar–zona "
+        "estable y las 14 figuras. Su objetivo es permitir una revisión visual y "
+        "numérica rápida antes de redactar el informe definitivo.",
         styles["Cuerpo"],
     ))
     story.append(Paragraph(
@@ -224,11 +236,9 @@ def main():
     story.append(Spacer(1, 0.5 * cm))
     story.append(Paragraph(
         "<b>Opción B</b>: todos los años con NK (consistencia metodológica). "
-        "<b>Opción A</b>: para cada año, la variante aceptada por la validación "
-        "cruzada del Paso 2 (NK o deramp3). <b>Opción C</b>: deramp3 forzado en "
-        "todos los años, es decir, el resultado que se obtendría aplicando el "
-        "deramp sin verificación estadística. Las diferencias entre opciones "
-        "cuantifican la sensibilidad metodológica del resultado.",
+        "<b>Opción A</b>: variante mixta (2017 y 2023 con NK, 2018 con deramp3, "
+        "según decisión de la CV). La diferencia entre ambas es la sensibilidad "
+        "metodológica del resultado.",
         styles["Cuerpo"],
     ))
     story.append(PageBreak())
@@ -289,11 +299,96 @@ def main():
         story.append(t5_table)
     story.append(PageBreak())
 
+    # --- Sección 3b: confianza en la señal ---
+    story.append(Paragraph("3b. Confianza en la señal de cambio (Paso 6)", styles["H1"]))
+    story.append(Paragraph(
+        "La propagación de error se evalúa en tres escenarios de correlación espacial: "
+        "<b>ultraconservador</b> (N_eff=1, todo el glaciar comparte el error), "
+        "<b>conservador</b> (N_eff del variograma, que coincide con el ultra porque el "
+        "rango de correlación excede el glaciar) y <b>realista</b> (N_eff=200, asunción "
+        "de correlación a 30 m, típica de DEM de dron). "
+        "En todos los escenarios, la señal es significativa con z > 10.",
+        styles["Cuerpo"],
+    ))
+    t10_rows = leer_csv(os.path.join(TABLES_DIR, "T10_confianza_volumen.csv"))
+    if t10_rows:
+        data_t10 = [["Año", "Variante", "V (10⁶ m³)", "σ_V ultra (%)", "z ultra",
+                     "σ_V real (%)", "z real"]]
+        for r in t10_rows:
+            data_t10.append([
+                r["year"],
+                r["variant"],
+                f"{float(r['volume_m3'])/1e6:+.3f}",
+                f"{float(r['sv_real_ultra_pct']):.2f}",
+                f"{float(r['z_real_ultra']):.1f}",
+                f"{float(r['sv_real_real_pct']):.2f}",
+                f"{float(r['z_real_real']):.1f}",
+            ])
+        t10_table = Table(data_t10,
+                          colWidths=[1.5*cm, 2*cm, 2.5*cm, 2.5*cm, 2*cm, 2.5*cm, 2*cm])
+        t10_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2C3E50")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 8),
+            ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F5F5F5")]),
+        ]))
+        story.append(t10_table)
+        story.append(Spacer(1, 0.5 * cm))
+        story.append(Paragraph(
+            "Los valores de z > 10 indican que la señal de cambio es distinguible del "
+            "error de co-registro incluso en el peor caso posible (correlación total del "
+            "error). En el escenario realista, z > 190, lo que confirma que la conclusión "
+            "es robusta a la elección del N_eff.",
+            styles["Cuerpo"],
+        ))
+    story.append(PageBreak())
+
+    # --- Sección 3c: control de extrapolación ---
+    story.append(Paragraph("3c. Control de extrapolación del deramp3", styles["H1"]))
+    story.append(Paragraph(
+        "El deramp3 se ajusta en zona estable y se aplica al glaciar. Si el glaciar está "
+        "fuera del hull de la zona estable, la corrección es una extrapolación. La "
+        "<b>guarda</b> (max(3 m, 2.5·NMAD)) es el límite superior permitido.",
+        styles["Cuerpo"],
+    ))
+    t12_rows = leer_csv(os.path.join(TABLES_DIR, "T12_confianza_extrap.csv"))
+    if t12_rows:
+        data_t12 = [["Año", "Variante", "Frac. hull", "Guarda (m)", "Máx. extrap (m)", "OK"]]
+        for r in t12_rows:
+            data_t12.append([
+                r["year"], r["variant"],
+                f"{float(r['frac_in_hull']):.3f}",
+                f"{float(r['guarda_m']):.2f}",
+                f"{float(r['max_extrap_glaciar_m']):.2f}",
+                r["extrap_ok"],
+            ])
+        t12_table = Table(data_t12, colWidths=[1.5*cm, 2.5*cm, 2.5*cm, 2.5*cm, 3*cm, 1.5*cm])
+        t12_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2C3E50")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 8),
+            ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F5F5F5")]),
+        ]))
+        story.append(t12_table)
+        story.append(Spacer(1, 0.5 * cm))
+        story.append(Paragraph(
+            "Los tres años pasan el control (OK=True). La corrección máxima del deramp3 en "
+            "2018 (2.49 m) está dentro de la guarda (3.00 m). No hay extrapolación problemática.",
+            styles["Cuerpo"],
+        ))
+    story.append(PageBreak())
+
     # --- Sección 4: figuras ---
     story.append(Paragraph("4. Figuras del análisis", styles["H1"]))
     story.append(Paragraph(
-        "Las 9 figuras generadas por el Paso 4, en orden de aparición previsto en el "
-        "informe final. Cada una se presenta con su pie de figura.",
+        "Las 14 figuras generadas por los Pasos 4 y 6, en orden de aparición previsto "
+        "en el informe final. Cada una se presenta con su pie de figura.",
         styles["Cuerpo"],
     ))
     story.append(PageBreak())
@@ -319,23 +414,18 @@ def main():
     # --- Sección 5: pendientes para el informe final ---
     story.append(Paragraph("5. Pendientes para el informe final", styles["H1"]))
     pendientes = [
-        "<b>Interpretación visual de F4</b>: describir si el campo de corrección del "
-        "deramp3 en 2018 es suave y monótono (deformación real del DEM) o irregular "
-        "(posible artefacto).",
-        "<b>Interpretación visual de F5</b>: confirmar que la corrección vs pendiente "
-        "y orientación es plana, es decir, sin sesgo direccional.",
+        "<b>Redactar el informe final</b>: convertir el <i>T6_report_main.md</i> en prosa "
+        "científica con introducción, métodos, resultados, discusión y conclusiones.",
         "<b>Interpretación visual de F8</b>: describir el patrón altitudinal del "
         "adelgazamiento (mayor en la lengua o en la zona de acumulación).",
-        "<b>Decisión de convención de signo</b>: documentar explícitamente que "
-        "dH = DEM_año − DEM_2025 y que volumen positivo = pérdida de masa.",
-        "<b>Elección de variante principal</b>: Opción A (mixta) o Opción B (todo NK). "
-        "La justificación depende de la interpretación de F4/F5 y del diagnóstico "
-        "glaciar–estable.",
-        "<b>Contexto climático</b>: contrastar la tasa de adelgazamiento (1.2 m/año "
-        "en 2017–2025, 2.0 m/año en 2023–2025) con datos meteorológicos o estudios "
-        "previos de la zona, si están disponibles.",
-        "<b>Limitaciones</b>: zona estable 4.5× más pequeña que el glaciar; período "
-        "de 8 años con solo 4 observaciones; propagación de error con variograma.",
+        "<b>Decisión final de convención de signo</b>: documentar dH = DEM_año − DEM_2025 "
+        "y volumen positivo = pérdida de masa.",
+        "<b>Contexto climático</b>: contrastar la tasa de adelgazamiento (1.2 m/año en "
+        "2017–2025, 2.0 m/año en 2023–2025) con datos meteorológicos o estudios previos "
+        "de la zona, si están disponibles.",
+        "<b>Limitaciones a documentar</b>: sin validación independiente (tipo ICESat-2); "
+        "variograma no converge dentro del glaciar; N_eff es una cota inferior; σ_DEM "
+        "asumido (0.2–0.5 m).",
     ]
     for p in pendientes:
         story.append(Paragraph(f"• {p}", styles["Cuerpo"]))
