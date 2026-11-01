@@ -23,7 +23,8 @@ El DEM de 2025 es la referencia. Se aplica co-registro Nuth & Kääb (NK) sobre 
 - **Informe final:** redactado (`report/report_final.md`, formato de artículo científico).
 - **Marco de confianza:** redactado (`report/MARCO_CONFIANZA.md`, autocontenido).
 - **Tests:** 28 pasando en 7 archivos (`pytest tests/`).
-- **Pendiente:** commit y push de la actualización del Paso 6, del marco de confianza y del informe final. Completar los metadatos del Apéndice A del informe (afiliación, topónimo del glaciar, fechas/sensor de los vuelos, licencia).
+- **Hecho:** Paso 6, marco de confianza e informe final están commiteados y pusheados (`6120657`, `2d75ae0`). Árbol de trabajo limpio.
+- **Pendiente:** redactar el Apéndice A del informe con sus metadatos (afiliación, topónimo del glaciar, fechas/sensor de los vuelos, licencia); aún no existe esa sección en `report/report_final.md`.
 
 ---
 
@@ -200,21 +201,19 @@ No hay evento anómalo en 2018.
 
 ---
 
-## 9. Cambios pendientes de commit (2026-11-01)
+## 9. Historial de commits recientes (2026-11-01)
 
-- `scripts/06-confianza.py` (Paso 6, nuevo).
-- `report/MARCO_CONFIANZA.md` (marco de confianza, nuevo).
-- `report/report_final.md` (informe final, nuevo).
-- `scripts/04-report.py` (actualizado: sección de confianza en `T6_report_main.md`).
-- `scripts/05-preinforme.py` (actualizado: F10–F14 y Tablas 10/12).
-- `docs/memoria/PROJECT_MEMORY.md` y `LLM_CONTEXT.md` (actualizados).
+El Paso 6, el marco de confianza y el informe final ya están commiteados y
+pusheados. No hay cambios pendientes de commit; el árbol de trabajo está limpio.
 
-**Comandos:**
+- `6120657` — feat: Paso 6 (confianza en la señal) + actualización de report y preinforme
+  - `scripts/06-confianza.py` (nuevo), `scripts/04-report.py`, `scripts/05-preinforme.py`
+- `2d75ae0` — docs: informe final, marco de confianza y actualización de memoria
+  - `report/report_final.md`, `report/MARCO_CONFIANZA.md`, `docs/memoria/PROJECT_MEMORY.md`, `LLM_CONTEXT.md`
+
+Para verificar el estado en cualquier momento:
 
 ```bash
-git add scripts/06-confianza.py scripts/04-report.py scripts/05-preinforme.py
-git add report/MARCO_CONFIANZA.md report/report_final.md
-git add docs/memoria/PROJECT_MEMORY.md LLM_CONTEXT.md
-git commit -m "feat: Paso 6 (confianza en la señal) + informe final + marco de confianza"
-git push origin main
+git status            # árbol de trabajo
+git log --oneline -5  # últimos commits
 ```
